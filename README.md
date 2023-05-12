@@ -1,4 +1,3 @@
-﻿
 # Meyendtris v0.1.1 
 
 Meyendtris is a variant of Tetris where the regular game mechanics (moving, rotating, and dropping the tetrominoes) are controlled by eye gaze. In addition, two passive BCIs influence additional parameters:
@@ -14,7 +13,7 @@ Meyendtris was developed during the IEEE Brain Hackathon in Budapest on October 
 
 ## Publication:
 
-Krol, L. R., Freytag, S.-C., & Zander, T. O. (2017). Meyendtris: A hands-free, multimodal Tetris clone using eye tracking and passive BCI for intuitive neuroadaptive gaming. In Proceedings of the 19th ACM International Conference on Multimodal Interaction (pp. 433–437). New York, NY, USA: ACM. doi: 10.1145/3136755.3136805
+`Krol, L. R.`, `Freytag, S.-C.`, & `Zander, T. O.` (2017). Meyendtris: A hands-free, multimodal Tetris clone using eye tracking and passive BCI for intuitive neuroadaptive gaming. In Proceedings of the 19th ACM International Conference on Multimodal Interaction (pp. 433–437). New York, NY, USA: ACM. doi: 10.1145/3136755.3136805
 
 
 
