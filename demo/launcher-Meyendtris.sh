@@ -68,7 +68,7 @@ echo    "Launcher version: ${GREEN}${VERSION}${NOCOLOR}"
 
 while
     drawline
-    echo    "MAIN MENU"
+    echo    "${BLUE}MAIN MENU${NOCOLOR}"
     drawline
     echo    "Enter an option, (${RED}CTLR+C${NOCOLOR} to exit anytime)"
     echo    "1. Calibration Phase"
@@ -86,7 +86,7 @@ do
     drawline
     echo    "Running ${YELLOW}Calibration Phase${NOCOLOR}"
     while
-        echo    "Enter an option, (${RED}CTLR+C${NOCOLOR} to exit anytime, ${GREEN}0${NOCOLOR} to return to MAIN MENU)"
+        echo    "Enter an option, (${RED}CTLR+C${NOCOLOR} to exit anytime, ${GREEN}Any other key${NOCOLOR} to return to MAIN MENU)"
         echo    "1. Calibrate Stress Classifier"
         echo    "2. Calibrate Concentration Classifier"
         echo    "3. Calibrate Error Classifier"
