@@ -63,7 +63,7 @@ from pylsl.pylsl import stream_inlet, resolve_stream, resolve_streams, vectorf
 from random import choice, random
 from time import time
 
-class Main(LatentModule):
+class MeyendtrisGame(LatentModule):
     def __init__(self):
         LatentModule.__init__(self)
 

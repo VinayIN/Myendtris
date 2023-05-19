@@ -139,7 +139,7 @@ parser.add_option("-t","--timecompensation", dest="timecompensation", default=CO
 # --- Pre-engine initialization ---
 
 print('Performing pre-engine initialization...')
-from framework.eventmarkers.eventmarkers import send_marker, init_markers
+from meyendtris.framework.eventmarkers.eventmarkers import send_marker, init_markers
 init_markers(opts.labstreaming,False,opts.datariver)
 
 # --- Engine initialization ---
@@ -151,7 +151,7 @@ from direct.task.Task import Task
 from pandac.PandaModules import WindowProperties
 from panda3d.core import loadPrcFile, loadPrcFileData, Filename, DSearchPath, VBase4 
 # thread coordination
-import framework.tickmodule
+import meyendtris.framework.tickmodule
 import threading
 # network support
 import queue

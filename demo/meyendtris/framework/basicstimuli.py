@@ -1,7 +1,7 @@
 import direct.gui
 import direct.showbase
 import pandac.PandaModules
-import framework.eventmarkers.eventmarkers
+import meyendtris.framework.eventmarkers.eventmarkers
 import math
     
 class BasicStimuli:

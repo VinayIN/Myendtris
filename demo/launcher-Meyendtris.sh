@@ -68,30 +68,52 @@ echo    "Launcher version: ${GREEN}${VERSION}${NOCOLOR}"
 
 while
     drawline
+    echo    "MAIN MENU"
+    drawline
     echo    "Enter an option, (${RED}CTLR+C${NOCOLOR} to exit anytime)"
-    echo    "1. Calibration (Alpha)"
-    echo    "2. Classifier Test (Bar)"
-    echo    "3. Meyendtris"
-    read n
-    [ $n -le 3 ]
+    echo    "1. Calibration Phase"
+    echo    "2. Classifier Test"
+    echo    "3. Start Meyendtris"
+    read main_option
+    [ $main_option -le 3 ]
 do
     statuscheck
     echo;
     toggle_lsl_sessionid
     echo;
-    case $n in
-  "1")
+    case $main_option in
+    "1")
     drawline
-    echo    "Running ${YELLOW}Calibration (Alpha)${NOCOLOR}"
-    ;;
-  "2")
+    echo    "Running ${YELLOW}Calibration Phase${NOCOLOR}"
+    while
+        echo    "Enter an option, (${RED}CTLR+C${NOCOLOR} to exit anytime, ${GREEN}0${NOCOLOR} to return to MAIN MENU)"
+        echo    "1. Calibrate Stress Classifier"
+        echo    "2. Calibrate Concentration Classifier"
+        echo    "3. Calibrate Error Classifier"
+        read calib_option
+        [[ $calib_option -gt 0 && $calib_option -le 3 ]]
+    do
+        case $calib_option in
+        "1")
+        echo    "Running Calibration for ${YELLOW}Stress Classifier${NOCOLOR}"
+        ;; # end of case 1 calib_option
+        "2")
+        echo    "Running Calibration for ${YELLOW}Concentration Classifier${NOCOLOR}"
+        ;; # end of case 2 calib_option
+        "3")
+        echo    "Running Calibration for ${YELLOW}Error Classifier${NOCOLOR}"
+        ;; # end of case 3 calib_option
+        esac
+    done
+    ;; # end of case 1 main_option
+    "2")
     drawline
-    echo    "Running ${YELLOW}Classifier Test (Bar)${NOCOLOR}"
-    ;;
-  "3")
-  drawline
-    echo    "Running ${YELLOW}Meyendtris${NOCOLOR}"
-    ;;
-esac
+    echo    "Running ${YELLOW}Classifier Test${NOCOLOR}"
+    ;; # end of case 2 main_option
+    "3")
+    drawline
+    echo    "Running ${YELLOW}Meyendtris${NOCOLOR} game"
+    ;; # end of case 3 main_option
+    esac
 done
 

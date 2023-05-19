@@ -3,11 +3,11 @@
 # time-consumption functions, such as sleep()).
 # ===========================================================================
 
-import framework.tickmodule
-import framework.basicstimuli
+import meyendtris.framework.tickmodule
+import meyendtris.framework.basicstimuli
 import threading, time, traceback
 
-class LatentModule(framework.tickmodule.TickModule, framework.basicstimuli.BasicStimuli):
+class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framework.basicstimuli.BasicStimuli):
     """
     Derive from this class to implement your own module with latent code, by overriding 
     the run() function. The only parts in your code that should consume significant amounts 
