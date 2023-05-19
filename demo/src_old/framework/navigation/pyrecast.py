@@ -15,7 +15,7 @@ if version_info >= (2,6,0):
         try:
             fp, pathname, description = imp.find_module('_pyrecast', [dirname(__file__)])
         except ImportError:
-            from . import _pyrecast
+            import _pyrecast
             return _pyrecast
         if fp is not None:
             try:
@@ -26,7 +26,7 @@ if version_info >= (2,6,0):
     _pyrecast = swig_import_helper()
     del swig_import_helper
 else:
-    from . import _pyrecast
+    import _pyrecast
 del version_info
 try:
     _swig_property = property

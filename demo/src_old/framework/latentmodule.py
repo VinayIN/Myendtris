@@ -421,8 +421,8 @@ class LatentModule(framework.tickmodule.TickModule, framework.basicstimuli.Basic
                     t.tick()
 
         except Exception as inst:
-            print("Exception during tick():")
-            print(inst)
+            print "Exception during tick():"
+            print inst
             traceback.print_exc()
             raise
         finally:
@@ -459,9 +459,9 @@ class LatentModule(framework.tickmodule.TickModule, framework.basicstimuli.Basic
         except self.ModuleCancelled:
             # the ModuleCancelled exception is used to forcibly exit the run() funcion 
             pass
-        except Exception as e:
-            print("Exception during run():")
-            print(e)
+        except Exception,e:
+            print "Exception during run():"
+            print e
             traceback.print_exc()
         finally:
             # make sure that we release the lock and reset the state
@@ -486,6 +486,6 @@ class LatentModule(framework.tickmodule.TickModule, framework.basicstimuli.Basic
         Internal event handler for watchfor(_multiple).
         """
         self._received_dict[eventid].append(time.time()-self._measuretime)
-        idx = [i for i,x in enumerate(self._received_dict.keys()) if x == eventid]
+        idx = [i for i,x in enumerate(self._received_dict.iterkeys()) if x == eventid]
         self.marker(230+idx[0])
         self._events_received.append(eventid)

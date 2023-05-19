@@ -56,7 +56,7 @@ from win32com.client import constants as _constants
 import win32com.client
 import pythoncom
 import time
-import _thread
+import thread
 
 # Make sure that we've got our COM wrappers generated.
 from win32com.client import gencache
@@ -166,7 +166,7 @@ def input(prompt=None, phraselist=None):
         listener.stoplistening()
 
     if prompt:
-        print(prompt)
+        print prompt
 
     if phraselist:
         listener = listenfor(phraselist, response)
@@ -273,4 +273,4 @@ def _ensure_event_thread():
                     _ListenerCallback(context, listener, callback)
                 time.sleep(.5)
         _eventthread = 1 # so loop doesn't terminate immediately
-        _eventthread = _thread.start_new_thread(loop, ())
+        _eventthread = thread.start_new_thread(loop, ())

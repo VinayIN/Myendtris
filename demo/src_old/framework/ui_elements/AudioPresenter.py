@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from .MessagePresenter import MessagePresenter
+from MessagePresenter import MessagePresenter
 from direct.showbase import Audio3DManager
 import time
 try:
@@ -78,13 +78,13 @@ class AudioPresenter(MessagePresenter):
                 threading.Thread(target=self.do_speak,args=[message]).start()
                 self.marker(221)
             except:
-                print("Error initializing speech output.")
+                print "Error initializing speech output."
 
     def do_speak(self,message):
         try:
             self.speak.Speak(message)
         except:
-            print("Error during speech production.")
+            print "Error during speech production."
 
     def precache(self,message):
         if message[-4] == '.':

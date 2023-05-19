@@ -57,7 +57,7 @@ class EventWatcher(DirectObject.DirectObject):
             eventtype = [eventtype]
         for evtype in eventtype:            
             self.acceptOnce(evtype,self._handleevent,[evtype])
-        print(str(time.time()) + " now watching for any event in: " + str(eventtype))
+        print str(time.time()) + " now watching for any event in: " + str(eventtype)
 
         
         # register a new handler (replacing the old one, if necessary) 

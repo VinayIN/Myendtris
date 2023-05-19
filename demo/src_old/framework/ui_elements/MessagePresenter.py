@@ -14,8 +14,8 @@ class MessagePresenter(object):
         Construct a new message presenter; if any keyword arguments named "lockduration" or "clearafter" are
         being passed, these override the default behavior of the submit() and submit_wait() functions.
         """
-        self.lockduration = kwargs['lockduration'] if 'lockduration' in kwargs else 0.0 
-        self.clearafter = kwargs['clearafter'] if 'clearafter' in kwargs else 0.0
+        self.lockduration = kwargs['lockduration'] if kwargs.has_key('lockduration') else 0.0 
+        self.clearafter = kwargs['clearafter'] if kwargs.has_key('clearafter') else 0.0
         self._locked_until = 0        
         self._next_clear = 0
 

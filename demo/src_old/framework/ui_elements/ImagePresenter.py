@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from .MessagePresenter import MessagePresenter
+from MessagePresenter import MessagePresenter
 from panda3d.core import *
 from direct.gui.DirectGui import *
 from direct.gui.OnscreenImage import OnscreenImage

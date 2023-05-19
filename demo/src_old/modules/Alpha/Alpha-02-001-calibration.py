@@ -172,6 +172,6 @@ class Main(LatentModule):
         
         
     def exit(self):
-        print("Exiting...")
+        print "Exiting..."
         exit()
         

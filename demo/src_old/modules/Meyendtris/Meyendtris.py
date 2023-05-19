@@ -159,7 +159,7 @@ class Main(LatentModule):
         try:
             # first trying to find a gaze stream
             stream = next(s for s in streams if s.type() == 'Gaze')
-            print("Found gaze stream", stream.name(), "from", stream.hostname())
+            print "Found gaze stream", stream.name(), "from", stream.hostname()
             self.inlet = stream_inlet(stream)
             self.inletXpos = 0  # index of x screen position in each sample
             self.inletYpos = 1  # index of y screen position in each sample
@@ -170,13 +170,13 @@ class Main(LatentModule):
                 # bypassing the requirement for LSL support by the tracker. this does
                 # require the LSL Mouse Connector to be running.
                 stream = next(s for s in streams if s.type() == 'Position')
-                print("Found position stream", stream.name(), "from", stream.hostname())
+                print "Found position stream", stream.name(), "from", stream.hostname()
                 self.inlet = stream_inlet(stream)
                 self.inletXpos = 0
                 self.inletYpos = 1
             except:
                 # fallback: manual control
-                print("No stream found: manual control")
+                print "No stream found: manual control"
                 self.showGaze = False
                 self.accept("arrow_left", self.moveTetromino, [0, -1])
                 self.accept("arrow_right", self.moveTetromino, [0, 1])

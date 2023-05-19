@@ -1,4 +1,4 @@
-from .MessagePresenter import MessagePresenter
+from MessagePresenter import MessagePresenter
 import random
 
 class BroadcastPresenter(MessagePresenter):

@@ -1,4 +1,4 @@
-from .MessagePresenter import MessagePresenter
+from MessagePresenter import MessagePresenter
 import random
 
 class RandomPresenter(MessagePresenter):
@@ -23,13 +23,13 @@ class RandomPresenter(MessagePresenter):
     def submit(self,message,lockduration=None,clearafter=None):
         """Submit a new message."""
         self.marker(220)
-        if message in self.messages:
-            msg_idx = [i for i,x in enumerate(self.messages.keys()) if x == message]
+        if self.messages.has_key(message):
+            msg_idx = [i for i,x in enumerate(self.messages.iterkeys()) if x == message]
             self.marker(10000+msg_idx[0])
-            item_idx = random.choice(list(range(len(self.messages[message]))))
+            item_idx = random.choice(range(len(self.messages[message])))
             self.marker(20000+item_idx)
             message = self.messages[message][item_idx]
-        print("chosen message: ",message,"(set size: ",len(self.messages),")")
+        print "chosen message: ",message,"(set size: ",len(self.messages),")"
         return self.wrappresenter.submit(message,lockduration,clearafter)
 
     def clear(self):
@@ -42,7 +42,7 @@ class RandomPresenter(MessagePresenter):
 
     def precache(self,message):
         """Pre-cache a message."""
-        if message in self.messages:
+        if self.messages.has_key(message):
             for m in self.messages[message]:
                 self.wrappresenter.precache(m)
         else:

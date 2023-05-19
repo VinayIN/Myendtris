@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from .TextPresenter import TextPresenter
+from TextPresenter import TextPresenter
 
 class ScrollPresenter(TextPresenter):
     """

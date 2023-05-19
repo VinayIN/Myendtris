@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from .MessagePresenter import MessagePresenter
+from MessagePresenter import MessagePresenter
 from direct.gui.DirectGui import *
 from panda3d.core import TextNode
 
@@ -61,7 +61,7 @@ class TextPresenter(MessagePresenter):
             self.text.setTextColor(self.textcolor[0],self.textcolor[1],self.textcolor[2],self.textcolor[3])
             self.marker(226)
         except:
-            print("Issue displaying text")
+            print "Issue displaying text"
 
     def _unpresent(self):
         self.text.setText(' ')
