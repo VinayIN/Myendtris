@@ -9,6 +9,7 @@ To learn programming with SNAP, please have a look at the file "LEARNING SNAP.TX
 
 Happy experiment coding!
 
+
 ### HOW TO RUN ANY `.py`?
 
 cd into the folder `demo`.
