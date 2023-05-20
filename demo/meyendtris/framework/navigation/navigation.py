@@ -1,4 +1,4 @@
-from . import pyrecast
+from .. import pyrecast
 from pandac.PandaModules import VBase4,Point3,Vec3
 import time
 

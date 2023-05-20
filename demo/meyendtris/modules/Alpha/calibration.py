@@ -36,13 +36,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 
-from framework.latentmodule import LatentModule
-from panda3d.core import PerlinNoise2, TextProperties, TextPropertiesManager, TextNode
+from meyendtris.framework.latentmodule import LatentModule
+from panda3d.core import TextProperties, TextPropertiesManager, DrawableRegion, AudioManager
+from direct.showbase.ShowBase import ShowBase
 from random import random
 from time import time
 
 
-class Main(LatentModule):
+class StressCalibration(LatentModule):
     def __init__(self):
         LatentModule.__init__(self, make_up_for_lost_time = False)
 
@@ -53,7 +54,7 @@ class Main(LatentModule):
         self.trials = 20                            # total number of trials (e.g. 2 = one of each)
         self.trialLength = 10                       # length per trial in seconds (only integers)
         
-        self.beepSound = "ding.wav"                 # audio file for beep
+        self.beepSound = "../../media/ding.wav"                 # audio file for beep
         self.beepVolume = 1.0                       # beep volume, 0-1
         
         self.crossColour = (0.2, 0.2, 0.2, 1)       # crosshair colour
@@ -97,11 +98,14 @@ class Main(LatentModule):
         
 
     def run(self):
+        base = ShowBase()
+        win = DrawableRegion()
+        audio = AudioManager()
         # accepting keyboard input
         self.accept("escape", self.exit)
     
         # setting black background colour
-        base.win.setClearColor(self.backgroundColour)
+        win.setClearColor(self.backgroundColour)
         
         # setting text colour
         tp = TextProperties()
@@ -110,8 +114,8 @@ class Main(LatentModule):
         tpMgr.setProperties("text", tp)
                 
         # initialising beep audio
-        beep = base.loader.loadSfx(self.beepSound)
-        beep.setVolume(self.beepVolume)
+        beep = audio.loadSfx(self.beepSound)
+        audio.setVolume(self.beepVolume)
         beep.setLoop(False)
         
         self.waitForUser()
@@ -160,7 +164,7 @@ class Main(LatentModule):
                             noise[0].destroy()
                             noise = noise[1:]
                 
-                        self.sleep(1 / self.fps)
+                        self.sleep(int(1 / self.fps))
                 
                 for square in noise:
                     square.destroy()
@@ -174,4 +178,3 @@ class Main(LatentModule):
     def exit(self):
         print("Exiting...")
         exit()
-        

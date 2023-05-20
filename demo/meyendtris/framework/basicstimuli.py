@@ -32,7 +32,7 @@ class BasicStimuli:
         Emit a marker. The markercode can be a string or a number. 
         Side note: strings will not work if a legacy marker sending protocol is enabled (such as DataRiver or the parallel port).
         """
-        framework.eventmarkers.eventmarkers.send_marker(markercode)
+        meyendtris.framework.eventmarkers.eventmarkers.send_marker(markercode)
     
     
     def write(self, 

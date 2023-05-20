@@ -44,10 +44,10 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         of these variables (such as loading text files) to the beginning of the run() function, since the default values
         may be overridden by the experimenter or config files after the module has been initialized.
         """
-        framework.basicstimuli.BasicStimuli.__init__(self)
+        meyendtris.framework.basicstimuli.BasicStimuli.__init__(self)
 
         self._thread = None             # the internal runner thread; None if not running
-        self._resumecond = threading.Condition(framework.tickmodule.shared_lock) # condition variable that signals that the sleep period is over
+        self._resumecond = threading.Condition(meyendtris.framework.tickmodule.shared_lock) # condition variable that signals that the sleep period is over
         self._cancelled = False         # signals whether cancel() has been invoked (i.e. that run() shall terminate at the next opportunity)
 
         now = time.time()
@@ -327,7 +327,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         Implementation of the start() interface, see TickModule.
         """
         try:
-            framework.tickmodule.shared_lock.acquire()
+            meyendtris.framework.tickmodule.shared_lock.acquire()
             #framework.tickmodule.engine_lock.acquire()
             if self._thread is None:
                 # create the runner thread and launch it
@@ -340,7 +340,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
                 self._subtasks = []  
         finally:
             #framework.tickmodule.engine_lock.release()
-            framework.tickmodule.shared_lock.release()
+            meyendtris.framework.tickmodule.shared_lock.release()
             
     
     def cancel(self):
@@ -352,7 +352,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             t.cancel()
         self._subtasks = []
 
-        framework.tickmodule.shared_lock.acquire()
+        meyendtris.framework.tickmodule.shared_lock.acquire()
         #framework.tickmodule.engine_lock.acquire()
                 
         # then cancel the main thread
@@ -363,11 +363,11 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             self._resumecond.notify()
             # wait until the thread has terminated
             #framework.tickmodule.engine_lock.release()
-            framework.tickmodule.shared_lock.release()
+            meyendtris.framework.tickmodule.shared_lock.release()
             self._thread = None
         else:
             #framework.tickmodule.engine_lock.release()
-            framework.tickmodule.shared_lock.release()
+            meyendtris.framework.tickmodule.shared_lock.release()
 
         # finally destroy all objects in self._to_destroy (in reverse order)
         self._to_destroy.reverse()
@@ -383,7 +383,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         Implementation of the tick() interface, see TickModule.
         """
         try:
-            framework.tickmodule.shared_lock.acquire()
+            meyendtris.framework.tickmodule.shared_lock.acquire()
             #framework.tickmodule.engine_lock.acquire()
             
             # determine the inter-frame time delta (if it's not a hickup)
@@ -427,7 +427,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             raise
         finally:
             #framework.tickmodule.engine_lock.release()
-            framework.tickmodule.shared_lock.release()
+            meyendtris.framework.tickmodule.shared_lock.release()
         
     
     # ========================
@@ -453,7 +453,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         """
         try:
             # acquire the lock (will only be unlocked from within or after run())
-            framework.tickmodule.shared_lock.acquire()
+            meyendtris.framework.tickmodule.shared_lock.acquire()
             #framework.tickmodule.engine_lock.acquire()
             self.run()
         except self.ModuleCancelled:
@@ -467,7 +467,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             # make sure that we release the lock and reset the state
             self._thread = None
             #framework.tickmodule.engine_lock.release()
-            framework.tickmodule.shared_lock.release()
+            meyendtris.framework.tickmodule.shared_lock.release()
 
         
 
