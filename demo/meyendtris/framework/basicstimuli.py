@@ -4,7 +4,7 @@ from direct.showbase.ShowBase import ShowBase
 from direct.showbase.Audio3DManager import Audio3DManager
 import panda3d.core as pandac
 import meyendtris.framework.eventmarkers.eventmarkers
-import math, warnings
+import math, warnings, os
     
 class BasicStimuli(ShowBase):
     """
@@ -21,7 +21,8 @@ class BasicStimuli(ShowBase):
             for o in self.objs:
                 o.destroy()
 
-    def __init__(self):      
+    def __init__(self):
+        super().__init__()
         self.audio3d = None             # 3d audio manager, if needed
         self.implicit_markers = False   # whether to generate implicit markers
                                         # in write(), movie(), etc.
@@ -53,7 +54,7 @@ class BasicStimuli(ShowBase):
               align='center',           # either 'left', 'center', or 'right'
               wordwrap=None,            # optionally the width to wordwrap the text at
               drawOrder=None,           # optional drawing order
-              font='arial.ttf',         # optionally the font of the text (see loader.loadFont)
+              font=os.path.join(meyendtris.__ROOT_PATH__, 'media/arial.ttf'), # optionally the font of the text (see loader.loadFont)
               parent=None,              # parent rendering context or Panda3d NodePath
               sort=0                    # sorting order of the text
               ):

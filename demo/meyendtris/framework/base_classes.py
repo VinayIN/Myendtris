@@ -26,7 +26,7 @@ class TickModule(DirectObject, ABC):
         to the start() function (or run() function if you're using a LatentModule) since the default values may be
         overridden by the experimenter or config files before he/she invokes start().
         """
-        pass
+        super().__init__()
 
     # ======================
     # === core interface ===
@@ -57,7 +57,7 @@ class TimeConsumingModule(DirectObject, ABC):
         """
         Abstract Base Class for the time consuming function that are to be inherited in LatentModule
         """
-        pass
+        super().__init__()
     
     @abstractmethod
     def sleep(self, duration):

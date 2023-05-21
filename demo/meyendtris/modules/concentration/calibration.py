@@ -40,9 +40,10 @@ class DistractionCalibration(LatentModule):
         super().__init__()
     
     def move_blocks(self):
-        pass
+        self.write("hello")
 
     def run(self):
+        self.move_blocks()
         print("Exiting...")
         exit()
         
