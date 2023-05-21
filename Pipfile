@@ -12,6 +12,7 @@ flit = "*"
 meyendtris = {editable = true, path = "./demo"}
 
 [dev-packages]
+ipython = "*"
 
 [requires]
 python_version = "3.8"

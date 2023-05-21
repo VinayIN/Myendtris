@@ -44,8 +44,7 @@ def init_markers(lsl,logfile,datariver):
     if datariver:
         try:
             global river_backend
-            import framework.eventmarkers.datariver_backend
-            river_backend = framework.eventmarkers.datariver_backend
+            river_backend = datariver_backend
             river_backend.send_marker(int(999))
             print("DataRiver has been loaded successfully for sending markers.")
         except:

@@ -5,6 +5,14 @@ Base class for all tick()-based modules.
 from direct.showbase.DirectObject import DirectObject
 import threading
 
+# this lock makes sure that only one chunk of code runs at a time
+# (tick, render, event handling or script code)
+shared_lock = threading.RLock()
+
+# this lock is currently unused by it intended to lock the Panda3d engine from concurrent access by either
+# Tickmodules or other threads (e.g., network handlers).
+engine_lock = threading.RLock()
+
 class TickModule(DirectObject):
     def __init__(self):
         """
@@ -36,16 +44,7 @@ class TickModule(DirectObject):
         """ Advance the internal state of the module, called once per frame. """
         pass
 
-
     def prune(self):
         """ Optionally prune large resources (e.g. textures) that may have been loaded during __init__ to make space for the next module. """
         pass
 
-
-# this lock makes sure that only one chunk of code runs at a time
-# (tick, render, event handling or script code)
-shared_lock = threading.RLock()
-
-# this lock is currently unused by it intended to lock the Panda3d engine from concurrent access by either
-# Tickmodules or other threads (e.g., network handlers).
-engine_lock = threading.RLock()

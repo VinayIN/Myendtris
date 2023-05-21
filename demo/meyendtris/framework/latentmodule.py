@@ -6,13 +6,13 @@
 import meyendtris.framework.tickmodule
 import meyendtris.framework.basicstimuli
 import threading, time, traceback
+import warnings
 
 class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framework.basicstimuli.BasicStimuli):
     """
     Derive from this class to implement your own module with latent code, by overriding 
     the run() function. The only parts in your code that should consume significant amounts 
     of time are the calls to explicit time-consumption functions (see below), such as sleep().
-    The module convenience.py also contains a batch of functions that may consume time.
     
     Note that any of these functions may throw a ModuleCancelled exception, in which case your function
     needs to clean all resources from the screen, audio buffers (and event handlers) and exit as soon
@@ -44,7 +44,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         of these variables (such as loading text files) to the beginning of the run() function, since the default values
         may be overridden by the experimenter or config files after the module has been initialized.
         """
-        meyendtris.framework.basicstimuli.BasicStimuli.__init__(self)
+        super().__init__()
 
         self._thread = None             # the internal runner thread; None if not running
         self._resumecond = threading.Condition(meyendtris.framework.tickmodule.shared_lock) # condition variable that signals that the sleep period is over
@@ -357,12 +357,12 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
                 
         # then cancel the main thread
         if self._thread is not None:
-            thread = self._thread
+            # thread = self._thread
             # set the cancellation flag and notify the thread
             self._cancelled = True
             self._resumecond.notify()
             # wait until the thread has terminated
-            #framework.tickmodule.engine_lock.release()
+            # framework.tickmodule.engine_lock.release()
             meyendtris.framework.tickmodule.shared_lock.release()
             self._thread = None
         else:
@@ -374,8 +374,8 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         for e in self._to_destroy:
             try:
                 e.destroy()
-            except:
-                pass
+            except Exception as err:
+                print("known error: {}".format(err))
             
 
     def tick(self):
@@ -395,8 +395,12 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             
             # send all queued messages
             for msg in self._messages:
-                messenger.send(msg)
-            self._messages = []            
+                try:
+                    messenger.send(msg)
+                except:
+                    warnings.warn("Failing sending messages")
+                    break
+            self._messages = []          
                         
             # if we are closer to the frame at which we should resume than the one before, end the sleep period 
             if now > self._resumeat - self._frametime/2:
