@@ -17,7 +17,7 @@ class HelloPanda(ShowBase):
 
     def __init__(self):
 
-        ShowBase.__init__(self)
+        super().__init__()
 
 
         # Disable the camera trackball controls.

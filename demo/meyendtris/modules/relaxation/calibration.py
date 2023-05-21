@@ -34,18 +34,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
-
+from meyendtris import path_join
 from meyendtris.framework.latentmodule import LatentModule
 from panda3d.core import TextProperties, TextPropertiesManager, DrawableRegion, AudioManager
 from direct.showbase.ShowBase import ShowBase
+from direct.gui.OnscreenImage import OnscreenImage
 from random import random
 from time import time
 
 
 class StressCalibration(LatentModule):
     def __init__(self):
-        LatentModule.__init__(self, make_up_for_lost_time = False)
+        super().__init__(make_up_for_lost_time = False)
 
         self.backgroundColour = (0, 0, 0, 1)        # background colour    
         
@@ -54,7 +54,7 @@ class StressCalibration(LatentModule):
         self.trials = 20                            # total number of trials (e.g. 2 = one of each)
         self.trialLength = 10                       # length per trial in seconds (only integers)
         
-        self.beepSound = "../../media/ding.wav"                 # audio file for beep
+        self.beepSound = path_join("/media/ding.wav") # audio file for beep
         self.beepVolume = 1.0                       # beep volume, 0-1
         
         self.crossColour = (0.2, 0.2, 0.2, 1)       # crosshair colour
@@ -153,10 +153,11 @@ class StressCalibration(LatentModule):
                         x     = self.map(random(), [0, 1], [-base.getAspectRatio(), base.getAspectRatio()])
                         y     = self.map(random(), [0, 1], [-1, 1])
                         
-                        square = self._engine.direct.gui.OnscreenImage.OnscreenImage(image='blank.tga',
+                        square = OnscreenImage(image=path_join('/media/blank.tga'),
                                 color = (red, green, blue, alpha),
                                 pos = (x, 0, y),
                                 scale = (width, 0, height))
+                        square.reparentTo(self.render)
                         square.setTransparency(1)
                         noise.append(square)
                         
@@ -178,3 +179,5 @@ class StressCalibration(LatentModule):
     def exit(self):
         print("Exiting...")
         exit()
+
+app = StressCalibration()

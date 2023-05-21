@@ -36,11 +36,24 @@ The SNAP experiment launcher program. To be run on the subject's PC.
 * For quick-and-dirty testing you may also override the launch options below under "Default Launcher Configuration", but note that you cannot check these changes back into the main source repository of SNAP.  
     
 '''
-import optparse, sys, os, fnmatch, traceback
+import sys, os
+import fnmatch, traceback, warnings
+from argparse import ArgumentParser
+import threading
+import queue
+import socketserver
 
-SNAP_VERSION = '1.01'
+
+from direct.showbase.ShowBase import ShowBase
+from direct.task.Task import Task
+from panda3d.core import loadPrcFile, loadPrcFileData, Filename, DSearchPath, VBase4
+
+from meyendtris import path_join
+from meyendtris.framework.eventmarkers.eventmarkers import send_marker, init_markers
+import meyendtris.framework.base_classes
 
 
+SNAP_VERSION = '2.0'
 # -----------------------------------------------------------------------------------------
 # --- Default Launcher Configuration (selectively overridden by command-line arguments) ---
 # -----------------------------------------------------------------------------------------
@@ -96,95 +109,6 @@ COMPENSATE_LOST_TIME = True
 
 
 
-# ------------------------------
-# --- Startup Initialization ---
-# ------------------------------
-
-print('This is SNAP version ' + SNAP_VERSION + "\n\n")
-
-# --- Parse console arguments ---
-
-print('Reading command-line options...')
-parser = optparse.OptionParser()
-parser.add_option("-m", "--module", dest="module", default=LOAD_MODULE,
-                  help="Experiment module to load upon startup (see modules). Can also be a .cfg file of a study (see studies and --studypath).")
-parser.add_option("-s","--studypath", dest="studypath", default=STUDYPATH,
-                  help="The directory in which to look for .cfg files, media, .prc files etc. for a particular study.")
-parser.add_option("-a", "--autolaunch", dest="autolaunch", default=AUTO_LAUNCH, 
-                  help="Whether to automatically launch the selected module.")
-parser.add_option("-d","--developer", dest="developer", default=DEVELOPER_MODE,
-                  help="Whether to launch in developer mode; if true, allows to load,start, and cancel experiment modules via keyboard shortcuts.")
-parser.add_option("-e","--engineconfig", dest="engineconfig", default=ENGINE_CONFIG,
-                  help="A configuration file for the Panda3d engine (allows to change many engine-level settings, such as the renderer; note that the format is dictated by Panda3d).")
-parser.add_option("-f","--fullscreen", dest="fullscreen", default=FULLSCREEN,
-                  help="Whether to go fullscreen (default: according to current engine config).")
-parser.add_option("-w","--windowsize", dest="windowsize", default=WINDOWSIZE,
-                  help="Window size, formatted as in --windowsize 1024x768 to select the main window size in pixels (default: accoding to current engine config).")
-parser.add_option("-o","--windoworigin", dest="windoworigin", default=WINDOWORIGIN,
-                  help="Window origin, formatted as in --windoworigin 50/50 to select the main window origin, i.e. left upper corner in pixes (default: accoding to current engine config).")
-parser.add_option("-b","--noborder", dest="noborder", default=NOBORDER,
-                  help="Disable window borders (default: accoding to current engine config).")
-parser.add_option("-c","--nomousecursor", dest="nomousecursor", default=NOMOUSECURSOR,
-                  help="Disable mouse cursor (default: accoding to current engine config).")
-parser.add_option("-r","--datariver", dest="datariver", default=DATA_RIVER,
-                  help="Whether to enable DataRiver support in the launcher.")
-parser.add_option("-l","--labstreaming", dest="labstreaming", default=LAB_STREAMING,
-                  help="Whether to enable lab streaming layer (LSL) support in the launcher.")
-parser.add_option("-p","--serverport", dest="serverport", default=SERVER_PORT,
-                  help="The port on which the launcher listens for remote control commands (e.g. loading a module).")
-parser.add_option("-t","--timecompensation", dest="timecompensation", default=COMPENSATE_LOST_TIME,
-                  help="Compensate time lost to processing or jitter by making the successive sleep() call shorter by a corresponding amount of time (good for real time, can be a hindrance during debugging).")
-(opts,args) = parser.parse_args()
-
-# --- Pre-engine initialization ---
-
-print('Performing pre-engine initialization...')
-from meyendtris.framework.eventmarkers.eventmarkers import send_marker, init_markers
-init_markers(opts.labstreaming,False,opts.datariver)
-
-# --- Engine initialization ---
-
-print('Loading the Panda3d engine...', end=' ')
-# panda3d support
-from direct.showbase.ShowBase import ShowBase
-from direct.task.Task import Task
-from pandac.PandaModules import WindowProperties
-from panda3d.core import loadPrcFile, loadPrcFileData, Filename, DSearchPath, VBase4 
-# thread coordination
-import meyendtris.framework.tickmodule
-import threading
-# network support
-import queue
-import socketserver
-print("done.")
-
-print("Applying the engine configuration file/settings...")
-
-# load the selected engine configuration (studypath takes precedence over the SNAP root path)
-config_searchpath = DSearchPath()
-config_searchpath.appendDirectory(Filename.fromOsSpecific(opts.studypath))
-config_searchpath.appendDirectory(Filename.fromOsSpecific('.'))
-loadPrcFile(config_searchpath.findFile(Filename.fromOsSpecific(opts.engineconfig)))
-
-# add a few more media search paths (in particular, media can be in the media directory, or in the studypath)
-loadPrcFileData('', 'model-path ' + opts.studypath + '/media')
-loadPrcFileData('', 'model-path ' + opts.studypath)
-loadPrcFileData('', 'model-path media')
-
-# override engine settings according to the command line arguments, if specified
-if opts.fullscreen is not None:
-    loadPrcFileData('', 'fullscreen ' + opts.fullscreen)
-if opts.windowsize is not None:
-    loadPrcFileData('', 'win-size ' + opts.windowsize.replace('x',' '))
-if opts.windoworigin is not None:
-    loadPrcFileData('', 'win-origin ' + opts.windoworigin.replace('/',' '))
-if opts.noborder is not None:
-    loadPrcFileData('', 'undecorated ' + opts.noborder)
-if opts.nomousecursor is not None:
-    loadPrcFileData('', 'nomousecursor ' + opts.nomousecursor)
-
-
-
 # -----------------------------------
 # --- Main application definition ---
 # -----------------------------------
@@ -192,16 +116,43 @@ if opts.nomousecursor is not None:
 class MainApp(ShowBase):    
     """The Main SNAP application."""
     
-    def __init__(self,opts):
-        ShowBase.__init__(self)
+    def __init__(self, args):
+        super().__init__()
 
         self._module = None              # the currently loaded module
         self._instance = None            # instance of the module's Main class
         self._executing = False          # whether we are executing the module
         self._remote_commands = queue.Queue() # a message queue filled by the TCP server
-        self._opts = opts                # the configuration options
+        self._args = args                # the configuration options
         self._console = None             # graphical console, if any
-        
+
+        init_markers(args.labstreaming,False,args.datariver)
+
+
+        print("Applying the engine configuration file/settings...")
+        # load the selected engine configuration (studypath takes precedence over the SNAP root path)
+        config_searchpath = DSearchPath()
+        config_searchpath.appendDirectory(Filename.fromOsSpecific(args.studypath))
+        config_searchpath.appendDirectory(Filename.fromOsSpecific('.'))
+        loadPrcFile(config_searchpath.findFile(Filename.fromOsSpecific(args.engineconfig)))
+
+        # add a few more media search paths (in particular, media can be in the media directory, or in the studypath)
+        loadPrcFileData('', 'model-path ' + args.studypath + '/media')
+        loadPrcFileData('', 'model-path ' + args.studypath)
+        loadPrcFileData('', 'model-path media')
+
+        # override engine settings according to the command line arguments, if specified
+        if args.fullscreen is not None:
+            loadPrcFileData('', 'fullscreen ' + args.fullscreen)
+        if args.windowsize is not None:
+            loadPrcFileData('', 'win-size ' + args.windowsize.replace('x',' '))
+        if args.windoworigin is not None:
+            loadPrcFileData('', 'win-origin ' + args.windoworigin.replace('/',' '))
+        if args.noborder is not None:
+            loadPrcFileData('', 'undecorated ' + args.noborder)
+        if args.nomousecursor is not None:
+            loadPrcFileData('', 'nomousecursor ' + args.nomousecursor)
+            
         # send an initial start marker
         send_marker(999)
 
@@ -212,37 +163,36 @@ class MainApp(ShowBase):
         self._main_task = self.taskMgr.add(self._main_loop_tick,"main_loop_tick")
         
         # register global keys if desired
-        if opts.developer:
-            self.accept("escape",exit)
+        if args.developer:
+            self.accept("escape", exit)
             self.accept("f1",self._remote_commands.put,['start'])
             self.accept("f2",self._remote_commands.put,['cancel'])
             self.accept("f5",self._remote_commands.put,['prune'])
-            self.accept("f12",self._init_console)
                 
         # load the initial module or config if desired
-        if opts.module is not None:
-            if opts.module.endswith(".cfg"):
-                self.load_config(opts.module)
+        if args.module is not None:
+            if args.module.endswith(".cfg"):
+                self.load_config(args.module)
             else:
-                self.load_module(opts.module)
+                self.load_module(args.module)
                 
         # start the module if desired
-        if (opts.autolaunch == True) or (opts.autolaunch=='1'):
+        if (args.autolaunch == True) or (args.autolaunch=='1'):
             self.start_module()
 
         # start the TCP server for remote control
-        self._init_server(opts.serverport)
+        self._init_server(args.serverport)
 
         
     def set_defaults(self):
         """Sets some environment defaults that might be overridden by the modules."""
-        font = loader.loadFont('arial.ttf',textureMargin=5)
+        font = self.loader.loadFont(path_join('media/arial.ttf'), textureMargin=5)
         font.setPixelsPerUnit(128)
-        base.win.setClearColorActive(True)
-        base.win.setClearColor((0.3, 0.3, 0.3, 1))
-        winprops = WindowProperties() 
-        winprops.setTitle('SNAP') 
-        base.win.requestProperties(winprops) 
+        # self.win.setClearColorActive(True)
+        # base.win.setClearColor((0.3, 0.3, 0.3, 1))
+        # winprops = WindowProperties() 
+        # winprops.setTitle('SNAP') 
+        # base.win.requestProperties(winprops) 
         
         
     def load_module(self,name):
@@ -267,7 +217,7 @@ class MainApp(ShowBase):
                     # instantiate the main class 
                     print("Instantiating the module's Main class...", end=' ')
                     self._instance = self._module.Main()
-                    self._instance._make_up_for_lost_time = self._opts.timecompensation
+                    self._instance._make_up_for_lost_time = self._args.timecompensation
                     print('done.')
                 except ImportError as e:
                     print("The experiment module '"+ name + "' could not be imported correctly. Make sure that its own imports are properly found by Python; reason:")
@@ -283,21 +233,7 @@ class MainApp(ShowBase):
     def load_config(self,name):
         """Try to load a study config file (see studies directory)."""
         print('Attempting to load config "'+ name+ '"...')
-        file = os.path.join(self._opts.studypath,name)
-        try:
-            if not os.path.exists(file):
-                print('file "' + file + '" not found.')
-            else:
-                with open(file,'r') as f:
-                    self.load_module(f.readline().strip())
-                    print('Now setting variables...', end=' ')
-                    for line in f.readlines():
-                        exec(line, self._instance.__dict__)
-                    print('done; config is loaded.')
-        except Exception as e:
-            print('Error while loading the study config file "' + file + '".')
-            print(e)
-            traceback.print_exc()
+        warnings.warn("rewrite this")
             
     # start executing the currently loaded module
     def start_module(self):        
@@ -331,7 +267,6 @@ class MainApp(ShowBase):
 
             
     # --- internal ---
-
     def _init_server(self,port):
         """Initialize the remote control server."""
         destination = self._remote_commands 
@@ -359,26 +294,12 @@ class MainApp(ShowBase):
             print("done.")
         except:
             print("failed; the port is already taken (probably the previous process is still around).")
-    
-  
-    # init a console that is scoped to the current module
-    def _init_console(self):
-        """Initialize a pull-down console. Note that this console is a bit glitchy -- use at your own risk."""
-        if self._console is None:
-            try:
-                print("Initializing console...", end=' ')
-                from framework.console.interactiveConsole import pandaConsole, INPUT_CONSOLE, INPUT_GUI, OUTPUT_PYTHON
-                self._console = pandaConsole(INPUT_CONSOLE|INPUT_GUI|OUTPUT_PYTHON, self._instance.__dict__)
-                print("done.")
-            except Exception as inst:
-                print("failed:")
-                print(inst)
 
 
     # main loop step, ticked every frame
     def _main_loop_tick(self,task):
         #framework.tickmodule.engine_lock.release()
-        framework.tickmodule.shared_lock.release()
+        meyendtris.framework.base_classes.shared_lock.release()
 
         # process any queued-up remote control messages
         try:
@@ -409,28 +330,63 @@ class MainApp(ShowBase):
         if (self._instance is not None) and self._executing:
             self._instance.tick()
 
-        framework.tickmodule.shared_lock.acquire()
+        meyendtris.framework.base_classes.shared_lock.acquire()
         #framework.tickmodule.engine_lock.acquire()
         return Task.cont
 
 
+# ------------------------------
+# --- Startup Initialization ---
+# ------------------------------
+if __name__ == "__main__":
+    print('This is SNAP version ' + SNAP_VERSION + "\n\n")
 
-# ----------------------
-# --- SNAP Main Loop ---
-# ----------------------
+    # --- Parse console arguments ---
 
-app = MainApp(opts)
-while True:
-    framework.tickmodule.shared_lock.acquire()
-    #framework.tickmodule.engine_lock.acquire()
-    app.taskMgr.step()
-    #framework.tickmodule.engine_lock.release()
-    framework.tickmodule.shared_lock.release()
+    print('Reading command-line options...')
+    parser = ArgumentParser()
+    parser.add_argument("-m", "--module", dest="module", default=LOAD_MODULE,
+                    help="Experiment module to load upon startup (see modules). Can also be a .cfg file of a study (see studies and --studypath).")
+    parser.add_argument("-s","--studypath", dest="studypath", default=STUDYPATH,
+                    help="The directory in which to look for .cfg files, media, .prc files etc. for a particular study.")
+    parser.add_argument("-a", "--autolaunch", dest="autolaunch", default=AUTO_LAUNCH, 
+                    help="Whether to automatically launch the selected module.")
+    parser.add_argument("-d","--developer", dest="developer", default=DEVELOPER_MODE,
+                    help="Whether to launch in developer mode; if true, allows to load,start, and cancel experiment modules via keyboard shortcuts.")
+    parser.add_argument("-e","--engineconfig", dest="engineconfig", default=ENGINE_CONFIG,
+                    help="A configuration file for the Panda3d engine (allows to change many engine-level settings, such as the renderer; note that the format is dictated by Panda3d).")
+    parser.add_argument("-f","--fullscreen", dest="fullscreen", default=FULLSCREEN,
+                    help="Whether to go fullscreen (default: according to current engine config).")
+    parser.add_argument("-w","--windowsize", dest="windowsize", default=WINDOWSIZE,
+                    help="Window size, formatted as in --windowsize 1024x768 to select the main window size in pixels (default: accoding to current engine config).")
+    parser.add_argument("-o","--windoworigin", dest="windoworigin", default=WINDOWORIGIN,
+                    help="Window origin, formatted as in --windoworigin 50/50 to select the main window origin, i.e. left upper corner in pixes (default: accoding to current engine config).")
+    parser.add_argument("-b","--noborder", dest="noborder", default=NOBORDER,
+                    help="Disable window borders (default: accoding to current engine config).")
+    parser.add_argument("-c","--nomousecursor", dest="nomousecursor", default=NOMOUSECURSOR,
+                    help="Disable mouse cursor (default: accoding to current engine config).")
+    parser.add_argument("-r","--datariver", dest="datariver", default=DATA_RIVER,
+                    help="Whether to enable DataRiver support in the launcher.")
+    parser.add_argument("-l","--labstreaming", dest="labstreaming", default=LAB_STREAMING,
+                    help="Whether to enable lab streaming layer (LSL) support in the launcher.")
+    parser.add_argument("-p","--serverport", dest="serverport", default=SERVER_PORT,
+                    help="The port on which the launcher listens for remote control commands (e.g. loading a module).")
+    parser.add_argument("-t","--timecompensation", dest="timecompensation", default=COMPENSATE_LOST_TIME,
+                    help="Compensate time lost to processing or jitter by making the successive sleep() call shorter by a corresponding amount of time (good for real time, can be a hindrance during debugging).")
+    args = parser.parse_args()
 
+    # ----------------------
+    # --- SNAP Main Loop ---
+    # ----------------------
 
-
-# --------------------------------
-# --- Finalization and cleanup ---
-# --------------------------------
-
-print('Terminating launcher...')
+    app = MainApp(args)
+    while True:
+        meyendtris.framework.base_classes.shared_lock.acquire()
+        #framework.tickmodule.engine_lock.acquire()
+        app.taskMgr.step()
+        #framework.tickmodule.engine_lock.release()
+        meyendtris.framework.base_classes.shared_lock.release()
+    # --------------------------------
+    # --- Finalization and cleanup ---
+    # --------------------------------
+    print('Terminating launcher...')

@@ -1,3 +1,4 @@
+from meyendtris import path_join
 from direct.gui.OnscreenText import OnscreenText
 from direct.gui.OnscreenImage import OnscreenImage
 from direct.showbase.ShowBase import ShowBase
@@ -54,7 +55,7 @@ class BasicStimuli(ShowBase):
               align='center',           # either 'left', 'center', or 'right'
               wordwrap=None,            # optionally the width to wordwrap the text at
               drawOrder=None,           # optional drawing order
-              font=os.path.join(meyendtris.__ROOT_PATH__, 'media/arial.ttf'), # optionally the font of the text (see loader.loadFont)
+              font=path_join('media/arial.ttf'), # optionally the font of the text (see loader.loadFont)
               parent=None,              # parent rendering context or Panda3d NodePath
               sort=0                    # sorting order of the text
               ):
@@ -69,8 +70,8 @@ class BasicStimuli(ShowBase):
         if duration == 0:
             block = False
         
-        if isinstance(font, str):
-            font = self.loader.loadFont(font)
+
+        font = self.loader.loadFont(font)
         obj = OnscreenText(text=text,pos=(pos[0],pos[1]-scale/4),roll=roll,scale=scale,fg=fg,bg=bg,shadow=shadow,shadowOffset=shadowOffset,frame=frame,align=align,wordwrap=wordwrap,drawOrder=drawOrder,font=font,parent=parent,sort=sort)
         self._to_destroy.append(obj)
         if self.implicit_markers:

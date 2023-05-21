@@ -1,4 +1,4 @@
-from meyendtris.modules.Alpha.calibration import StressCalibration
+from meyendtris.modules.relaxation.calibration import StressCalibration
 from meyendtris.modules.concentration.calibration import DistractionCalibration
 
 def test_stress_calibration():
