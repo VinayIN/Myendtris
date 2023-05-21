@@ -1,7 +1,7 @@
 """
 Base class for all tick()-based modules.
 """
-
+from abc import ABC, abstractmethod
 from direct.showbase.DirectObject import DirectObject
 import threading
 
@@ -13,7 +13,7 @@ shared_lock = threading.RLock()
 # Tickmodules or other threads (e.g., network handlers).
 engine_lock = threading.RLock()
 
-class TickModule(DirectObject):
+class TickModule(DirectObject, ABC):
     def __init__(self):
         """
         Construct a new module and pre-load any data if necessary.
@@ -32,19 +32,48 @@ class TickModule(DirectObject):
     # === core interface ===
     # ======================
 
+    @abstractmethod
     def start(self):
         """ Start execution of the module, i.e. initialize whatever is necessary. """
         pass
     
+    @abstractmethod
     def cancel(self):
         """ Cancel execution of the module. Remove any objects from the screen, audio buffers, event handlers, etc. """
         pass
     
+    @abstractmethod
     def tick(self):
         """ Advance the internal state of the module, called once per frame. """
         pass
-
+    
+    @abstractmethod
     def prune(self):
         """ Optionally prune large resources (e.g. textures) that may have been loaded during __init__ to make space for the next module. """
         pass
 
+class TimeConsumingModule(DirectObject, ABC):
+    def __init__(self):
+        """
+        Abstract Base Class for the time consuming function that are to be inherited in LatentModule
+        """
+        pass
+    
+    @abstractmethod
+    def sleep(self, duration):
+        """
+        Sleep for a number of seconds;
+        """
+        pass
+    
+    @abstractmethod
+    def waitfor(self, eventid, duration):            
+        """
+        Wait until a specified event occurs or a number of seconds has passed;
+        """
+        pass
+        """
+        The amount of time that has been consumed since the most recent time-consumption function was entered.
+        """
+        return time.time() - self._exectime
+    

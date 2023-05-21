@@ -43,11 +43,9 @@ class DistractionCalibration(LatentModule):
         pass
 
     def run(self):
-        self.exit()
-
-    def exit(self):
         print("Exiting...")
         exit()
+        
 
 # Make an instance of our class and run the demo
 viewer = DistractionCalibration()

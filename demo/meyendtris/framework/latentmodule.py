@@ -3,12 +3,17 @@
 # time-consumption functions, such as sleep()).
 # ===========================================================================
 
-import meyendtris.framework.tickmodule
+from abc import ABC, abstractmethod
+import meyendtris.framework.base_classes
 import meyendtris.framework.basicstimuli
 import threading, time, traceback
 import warnings
 
-class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framework.basicstimuli.BasicStimuli):
+class LatentModule(
+    meyendtris.framework.base_classes.TickModule,
+    meyendtris.framework.base_classes.TimeConsumingModule,
+    meyendtris.framework.basicstimuli.BasicStimuli,
+    ABC):
     """
     Derive from this class to implement your own module with latent code, by overriding 
     the run() function. The only parts in your code that should consume significant amounts 
@@ -47,7 +52,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         super().__init__()
 
         self._thread = None             # the internal runner thread; None if not running
-        self._resumecond = threading.Condition(meyendtris.framework.tickmodule.shared_lock) # condition variable that signals that the sleep period is over
+        self._resumecond = threading.Condition(meyendtris.framework.base_classes.shared_lock) # condition variable that signals that the sleep period is over
         self._cancelled = False         # signals whether cancel() has been invoked (i.e. that run() shall terminate at the next opportunity)
 
         now = time.time()
@@ -96,9 +101,9 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         return newtask
 
 
-    # ====================================================================================
-    # === Functions that wait for things to happen (a.k.a. time-consumption functions) ===
-    # ====================================================================================
+    # =======================================================================================================================
+    # === time-consumption functions that wait for things to happen (Implementation of the TimeConsumingModule interface) ===
+    # =======================================================================================================================
 
     def sleep(self,duration=100000,cur_tick=None):
         """
@@ -119,7 +124,6 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         if self._cancelled:
             # make sure that run() terminates
             raise self.ModuleCancelled
-
 
     def waitfor(self,eventid,duration=100000,cur_tick=None):            
         """
@@ -149,7 +153,6 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             return self._times_received[0]
         else:
             return None
-
 
     def waitfor_multiple(self,eventids,duration=100000,cur_tick=None):            
         """
@@ -185,7 +188,6 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         else:
             return None
 
-
     def watchfor(self,eventid,duration=100000,cur_tick=None):            
         """
         Sleep for a number of seconds and record the times of occurrence
@@ -211,7 +213,6 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             self.ignore(eventid)
 
         return self._received_dict[eventid]
-    
     
     def watchfor_multiple(self,eventids,duration=100000,cur_tick=None,list_only=False):            
         """
@@ -248,7 +249,6 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         else:
             return self._received_dict
 
-
     def watchfor_multiple_begin(self,eventids):            
         """
         Begin watching for multiple events. The results are obtained by
@@ -271,7 +271,6 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             self.marker(228)
         return eventids
 
-
     def watchfor_multiple_end(self,handle,list_only=False):            
         """
         Returns a dictionary from event type to a list of times at which the event
@@ -287,13 +286,11 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         else:
             return self._received_dict
 
-
     def resume(self):
         """
         Resume from a time-consumption function, e.g., in response to some event.
         """
         self._resumeat = time.time()
-
 
     def consumed_duration(self):
         """
@@ -313,11 +310,6 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         self._messages.append(msg)
 
 
-    def prune(self):
-        """
-        Optionally release any large cached resources (e.g. textures) to make space for the next module.
-        """
-
     # ==================================================
     # === Implementation of the TickModule interface ===
     # ==================================================
@@ -327,7 +319,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         Implementation of the start() interface, see TickModule.
         """
         try:
-            meyendtris.framework.tickmodule.shared_lock.acquire()
+            meyendtris.framework.base_classes.shared_lock.acquire()
             #framework.tickmodule.engine_lock.acquire()
             if self._thread is None:
                 # create the runner thread and launch it
@@ -340,9 +332,8 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
                 self._subtasks = []  
         finally:
             #framework.tickmodule.engine_lock.release()
-            meyendtris.framework.tickmodule.shared_lock.release()
-            
-    
+            meyendtris.framework.base_classes.shared_lock.release()
+
     def cancel(self):
         """
         Implementation of the cancel() interface, see TickModule.
@@ -352,7 +343,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             t.cancel()
         self._subtasks = []
 
-        meyendtris.framework.tickmodule.shared_lock.acquire()
+        meyendtris.framework.base_classes.shared_lock.acquire()
         #framework.tickmodule.engine_lock.acquire()
                 
         # then cancel the main thread
@@ -363,11 +354,11 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             self._resumecond.notify()
             # wait until the thread has terminated
             # framework.tickmodule.engine_lock.release()
-            meyendtris.framework.tickmodule.shared_lock.release()
+            meyendtris.framework.base_classes.shared_lock.release()
             self._thread = None
         else:
             #framework.tickmodule.engine_lock.release()
-            meyendtris.framework.tickmodule.shared_lock.release()
+            meyendtris.framework.base_classes.shared_lock.release()
 
         # finally destroy all objects in self._to_destroy (in reverse order)
         self._to_destroy.reverse()
@@ -376,14 +367,13 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
                 e.destroy()
             except Exception as err:
                 print("known error: {}".format(err))
-            
 
     def tick(self):
         """
         Implementation of the tick() interface, see TickModule.
         """
         try:
-            meyendtris.framework.tickmodule.shared_lock.acquire()
+            meyendtris.framework.base_classes.shared_lock.acquire()
             #framework.tickmodule.engine_lock.acquire()
             
             # determine the inter-frame time delta (if it's not a hickup)
@@ -431,9 +421,14 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             raise
         finally:
             #framework.tickmodule.engine_lock.release()
-            meyendtris.framework.tickmodule.shared_lock.release()
+            meyendtris.framework.base_classes.shared_lock.release()
         
-    
+    def prune(self):
+        """
+        Optionally release any large cached resources (e.g. textures) to make space for the next module.
+        """
+        pass
+
     # ========================
     # === Internal Helpers ===
     # ========================
@@ -457,7 +452,7 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
         """
         try:
             # acquire the lock (will only be unlocked from within or after run())
-            meyendtris.framework.tickmodule.shared_lock.acquire()
+            meyendtris.framework.base_classes.shared_lock.acquire()
             #framework.tickmodule.engine_lock.acquire()
             self.run()
         except self.ModuleCancelled:
@@ -471,9 +466,8 @@ class LatentModule(meyendtris.framework.tickmodule.TickModule, meyendtris.framew
             # make sure that we release the lock and reset the state
             self._thread = None
             #framework.tickmodule.engine_lock.release()
-            meyendtris.framework.tickmodule.shared_lock.release()
-
-        
+            meyendtris.framework.base_classes.shared_lock.release()
+     
 
     def _on_wait_event(self,eventid):
         """
