@@ -27,7 +27,6 @@ class BasicStimuli(ShowBase):
                                         # in write(), movie(), etc.
         self._to_destroy = []
 
-
     def marker(self,markercode):
         """
         Emit a marker. The markercode can be a string or a number. 

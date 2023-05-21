@@ -72,8 +72,4 @@ class TimeConsumingModule(DirectObject, ABC):
         Wait until a specified event occurs or a number of seconds has passed;
         """
         pass
-        """
-        The amount of time that has been consumed since the most recent time-consumption function was entered.
-        """
-        return time.time() - self._exectime
     
