@@ -61,7 +61,7 @@ SNAP_VERSION = '2.0'
 
 # If non-empty, this is the module that will be initially loaded if nothing
 # else is specified. Can also be a .cfg file of a study.
-LOAD_MODULE = "Sample1"
+LOAD_MODULE = "concentration.calibration"
 
 # If true, the selected module will be launched automatically; otherwise it will
 # only be (pre-)loaded; the user needs to press F1 (or issue the "start" command remotely) to start the module 
@@ -69,7 +69,7 @@ AUTO_LAUNCH = True
 
 # The directory in which to look for .cfg files, if passed as module or via
 # remote control messages.
-STUDYPATH = "studies\SampleStudy" 
+STUDYPATH = path_join("studies/")
 
 # The default engine configuration.
 ENGINE_CONFIG = "defaultsettings.prc"
@@ -119,12 +119,10 @@ class MainApp(ShowBase):
     def __init__(self, args):
         super().__init__()
 
-        self._module = None              # the currently loaded module
         self._instance = None            # instance of the module's Main class
         self._executing = False          # whether we are executing the module
         self._remote_commands = queue.Queue() # a message queue filled by the TCP server
         self._args = args                # the configuration options
-        self._console = None             # graphical console, if any
 
         init_markers(args.labstreaming,False,args.datariver)
 
@@ -170,11 +168,14 @@ class MainApp(ShowBase):
             self.accept("f5",self._remote_commands.put,['prune'])
                 
         # load the initial module or config if desired
-        if args.module is not None:
-            if args.module.endswith(".cfg"):
-                self.load_config(args.module)
-            else:
-                self.load_module(args.module)
+        if args.runner is not None:
+            import importlib
+            try:
+                self.load_module(args.runner)
+            except Exception as err:
+                print(f"The experiment module '{args.runner}' could not be imported correctly.")
+                warnings.warn("module instantiation error")
+                traceback.print_exc()
                 
         # start the module if desired
         if (args.autolaunch == True) or (args.autolaunch=='1'):
@@ -195,40 +196,12 @@ class MainApp(ShowBase):
         # base.win.requestProperties(winprops) 
         
         
-    def load_module(self,name):
+    def load_module(self, runner):
         """Try to load the given module, if any. The module can be in any folder under modules."""
-        if name is not None and len(name) > 0:
-            print('Importing experiment module "' + name + '"...', end=' ')            
-            # find it under modules...
-            locations = []
-            for root, dirnames, filenames in os.walk('modules'):
-                for filename in fnmatch.filter(filenames, name+'.py'):
-                    locations.append(root)
-            if len(locations) == 1:
-                if self._instance is not None:
-                    self.prune_module()
-                self.set_defaults()
-                if locations[0] not in sys.path:
-                    sys.path.insert(0, locations[0])
-                try:
-                    # import it
-                    self._module = __import__(name)
-                    print('done.')
-                    # instantiate the main class 
-                    print("Instantiating the module's Main class...", end=' ')
-                    self._instance = self._module.Main()
-                    self._instance._make_up_for_lost_time = self._args.timecompensation
-                    print('done.')
-                except ImportError as e:
-                    print("The experiment module '"+ name + "' could not be imported correctly. Make sure that its own imports are properly found by Python; reason:")
-                    print(e)
-                    traceback.print_exc()
-                    
-            elif len(locations) == 0:
-                print("The module named '" + name + "' was not found in the modules folder or any of its sub-folders.")                    
-            else:
-                print("The module named '" + name + "' was found in multiple sub-folders of the modules folder; make sure that you are not using a duplicate name.")                    
-
+        module = ""
+        self._instance = module.Main()
+        self._instance._make_up_for_lost_time = self._args.timecompensation
+        print(f"module {runner} loaded sucessfully.")
 
     def load_config(self,name):
         """Try to load a study config file (see studies directory)."""
@@ -345,7 +318,7 @@ if __name__ == "__main__":
 
     print('Reading command-line options...')
     parser = ArgumentParser()
-    parser.add_argument("-m", "--module", dest="module", default=LOAD_MODULE,
+    parser.add_argument("-i", "--input", dest="runner", default=LOAD_MODULE,
                     help="Experiment module to load upon startup (see modules). Can also be a .cfg file of a study (see studies and --studypath).")
     parser.add_argument("-s","--studypath", dest="studypath", default=STUDYPATH,
                     help="The directory in which to look for .cfg files, media, .prc files etc. for a particular study.")
@@ -380,6 +353,8 @@ if __name__ == "__main__":
     # ----------------------
 
     app = MainApp(args)
+
+    # Needed after the call to MainApp
     while True:
         meyendtris.framework.base_classes.shared_lock.acquire()
         #framework.tickmodule.engine_lock.acquire()

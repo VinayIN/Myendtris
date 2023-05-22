@@ -44,8 +44,3 @@ class DistractionCalibration(LatentModule):
 
     def run(self):
         self.move_blocks()
-        
-
-# Make an instance of our class and run the demo
-viewer = DistractionCalibration()
-viewer.start()
