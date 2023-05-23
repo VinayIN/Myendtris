@@ -35,11 +35,12 @@ from meyendtris.framework.latentmodule import LatentModule
 from direct.showbase.ShowBase import ShowBase
 
 
-class DistractionCalibration(LatentModule):
+class Main(LatentModule):
     def __init__(self):
         super().__init__()
     
     def move_blocks(self):
+
         self.write("hello", duration=10)
 
     def run(self):

@@ -7,9 +7,9 @@ The SNAP experiment launcher program. To be run on the subject's PC.
   (one at a time).
 
 * The module to be launched (and various other options) can be specified at the command line; here is a complete listing of all possible config options and their defaults:
-  launcher.py --module Sample1 --studypath studies/Sample1 --autolaunch 1 --developer 1 --engineconfig defaultsettings.prc --datariver 0 --labstreaming 1 --fullscreen 0 --windowsize 800x600 --windoworigin 50/50 --noborder 0 --nomousecursor 0 --timecompensation 1
+  launcher.py --MODULENAME relaxation.calibration --STUDYPATH studies/Sample1 --AUTOLAUNCH 1 --DEVELOPER 1 --engineconfig defaultsettings.prc --DATARIVER 0 --LABSTREAMING 1 --FULLSCREEN 0 --WINDOWSIZE 800x600 --WINDOWORIGIN 50/50 --NOBORDER 0 --NOMOUSECURSOR 0 --TIMECONSUMPENSATE 1
     
-* If in developer mode, several key bindings are enabled:
+* If in DEVELOPER mode, several key bindings are enabled:
    Esc: exit program
    F1: start module
    F2: cancel module
@@ -19,14 +19,14 @@ The SNAP experiment launcher program. To be run on the subject's PC.
   and assignments to member variables of the module instance in the remaining lines (all Python syntax allowed).
   
   A config can be specified in the command line just by passing the appropriate .cfg file name, as in the following example.
-  In addition, the directory where to look for the .cfg file can be specified as the studypath.
-  launcher.py --module=test1.cfg --studypath=studies/DAS
+  In addition, the directory where to look for the .cfg file can be specified as the STUDYPATH.
+  launcher.py --module=test1.cfg --STUDYPATH=studies/DAS
   
 * The program can be remote-controlled via a simple TCP text-format network protocol (on port 7899) supporting the following messages:
   start                  --> start the current module
   cancel                 --> cancel execution of the current module
   load modulename        --> load the module named modulename
-  config configname.cfg  --> load a config named configname.cfg (make sure that the studypath is set correctly so that it's found)
+  config configname.cfg  --> load a config named configname.cfg (make sure that the STUDYPATH is set correctly so that it's found)
   setup name=value       --> assign a value to a member variable in the current module instance
                              can also involve multiple assignments separated by semicolons, full Python syntax allowed.
    
@@ -42,7 +42,7 @@ from argparse import ArgumentParser
 import threading
 import queue
 import socketserver
-import importlib
+import pkgutil
 
 
 from direct.showbase.ShowBase import ShowBase
@@ -55,14 +55,17 @@ import meyendtris.framework.base_classes
 
 
 SNAP_VERSION = '2.0'
+
+
 # -----------------------------------------------------------------------------------------
 # --- Default Launcher Configuration (selectively overridden by command-line arguments) ---
 # -----------------------------------------------------------------------------------------
 
-
-# If non-empty, this is the module that will be initially loaded if nothing
-# else is specified. Can also be a .cfg file of a study.
-LOAD_MODULE = "concentration.calibration"
+# This is the module that will be initially loaded if nothing
+# else is specified.
+# Can also be a .cfg file of a study.
+# provide a .py that Main() ex: "concentration.calibration". Assumes to load it from modules/ folder
+LOAD_MODULE = ""
 
 # If true, the selected module will be launched automatically; otherwise it will
 # only be (pre-)loaded; the user needs to press F1 (or issue the "start" command remotely) to start the module 
@@ -70,25 +73,22 @@ AUTO_LAUNCH = True
 
 # The directory in which to look for .cfg files, if passed as module or via
 # remote control messages.
-STUDYPATH = path_join("studies/")
-
-# The default engine configuration.
-ENGINE_CONFIG = "defaultsettings.prc"
+STUDY_PATH = "meyendtrisdisplaysettings.prc"
 
 # Set this to True or False to override the settings in the engineconfig file (.prc)
-FULLSCREEN = None
+FULL_SCREEN = False
 
 # Set this to a resolution like "1024x768" (with quotes) to override the settings in the engineconfig file
-WINDOWSIZE = None
+WINDOW_SIZE = "1024x768"
 
 # Set this to a pixel offset from left top corner, e.g. "50/50" (with quotes) to override the window location in the engineconfig file
-WINDOWORIGIN = None
+WINDOW_ORIGIN = "50/50"
 
 # Set this to True or False to override the window border setting in the engineconfig file
-NOBORDER = None
+NO_BORDER = True
 
 # Set this to True or False to override the mouse cursor setting in the engineconfig file
-NOMOUSECURSOR = None
+NO_MOUSECURSOR = False
 
 # Enable DataRiver support for marker sending.
 DATA_RIVER = False
@@ -100,7 +100,7 @@ LAB_STREAMING = True
 # commands (e.g. launching an experiment module)
 SERVER_PORT = 7897
 
-# Whether the Launcher starts in developer mode; if true, modules can be loaded,
+# Whether the Launcher starts in DEVELOPER mode; if true, modules can be loaded,
 # started and cancelled via keyboard shortcuts (not recommended for production 
 # experiments)
 DEVELOPER_MODE = True
@@ -114,40 +114,41 @@ COMPENSATE_LOST_TIME = True
 # --- Main application definition ---
 # -----------------------------------
 
-class MainApp(ShowBase):    
+class MainApp(ShowBase):
     """The Main SNAP application."""
     
     def __init__(
             self,
-            fullscreen=False,
-            windowsize="1024x720",
-            windoworigin="50/50",
-            noborder=True,
-            nomousecursor=False,
-            data_river=False,
-            lab_streaming=True,
-            server_port=7897,
-            developer_mode=True,
-            compensate_lost_time=True, **kwargs):
+            modulename=LOAD_MODULE,
+            studypath=STUDY_PATH,
+            fullscreen=FULL_SCREEN,
+            windowsize=WINDOW_SIZE,
+            windoworigin=WINDOW_ORIGIN,
+            noborder=NO_BORDER,
+            nomousecursor=NO_MOUSECURSOR,
+            datariver=DATA_RIVER,
+            labstreaming=LAB_STREAMING,
+            serverport=SERVER_PORT,
+            developer=DEVELOPER_MODE,
+            timecompensate=COMPENSATE_LOST_TIME,
+            autolaunch=AUTO_LAUNCH, **kwargs):
         """Needs a modulename to load and execute, pass it in global variable LOAD_MODULE or as cmdline args, --modulename
         """
         super().__init__()
-
         # load the parameters from kwargs, if passed any
-        self._module = kwargs["modulename"] if kwargs["modulename"] else LOAD_MODULE
-        self._labstreaming = kwargs["labstreaming"] if kwargs["labstreaming"] else lab_streaming
-        self._datariver = kwargs["datariver"] if kwargs["datariver"] else data_river
-        self._windowsize = kwargs["windowsize"] if kwargs["windowsize"] else windowsize
-        self._windoworigin = kwargs["windoworigin"] if kwargs["windoworigin"] else windoworigin
-        self._fullscreen = kwargs["fullscreen"] if kwargs["fullscreen"] else fullscreen
-        self._noborder = kwargs["noborder"] if kwargs["noborder"] else noborder
-        self._nomousecursor = kwargs["nomousecursor"] if kwargs["nomousecursor"] else nomousecursor
-        self._server_port = kwargs["server_port"] if kwargs["server_port"] else server_port
-        self._developer_mode = kwargs["developer_mode"] if kwargs["developer_mode"] else developer_mode
-        self._compensate_lost_time = kwargs["compensate_lost_time"] if kwargs["compensate_lost_time"] else compensate_lost_time
-        self._studypath = 
-
-
+        self._module = kwargs.get("MODULENAME") if kwargs.get("MODULENAME") else modulename
+        self._labstreaming = kwargs.get("LABSTREAMING") if kwargs.get("LABSTREAMING") else labstreaming
+        self._datariver = kwargs.get("DATARIVER") if kwargs.get("DATARIVER") else datariver
+        self._windowsize = kwargs.get("WINDOWSIZE") if kwargs.get("WINDOWSIZE") else windowsize
+        self._windoworigin = kwargs.get("WINDOWORIGIN") if kwargs.get("WINDOWORIGIN") else windoworigin
+        self._fullscreen = kwargs.get("FULLSCREEN") if kwargs.get("FULLSCREEN") else fullscreen
+        self._noborder = kwargs.get("NOBORDER") if kwargs.get("NOBORDER") else noborder
+        self._nomousecursor = kwargs.get("NOMOUSECURSOR") if kwargs.get("NOMOUSECURSOR") else nomousecursor
+        self._server_port = kwargs.get("SERVERPORT") if kwargs.get("SERVERPORT") else serverport
+        self._developer_mode = kwargs.get("DEVELOPER") if kwargs.get("DEVELOPER") else developer
+        self._compensate_lost_time = kwargs.get("TIMECONSUMPENSATE") if kwargs.get("TIMECONSUMPENSATE") else timecompensate
+        self._studypath =  path_join(kwargs.get("STUDYPATH")) if kwargs.get("STUDYPATH") else path_join(f"studies/{studypath}") # type: ignore
+        self._autolaunch = kwargs.get("AUTOLAUNCH") if kwargs.get("AUTOLAUNCH") else autolaunch
 
         # whether we are executing the module
         self._executing = False
@@ -164,20 +165,17 @@ class MainApp(ShowBase):
             traceback.print_exc()
 
         init_markers(self._labstreaming, False, self._datariver)
-
-        self._load_configfiles()
-            
+        self._load_serverconfig()          
         # send an initial start marker
         send_marker(999)
-
         # preload some data and init some settings
         self.set_defaults()
 
         # register the main loop
-        self._main_task = self.taskMgr.add(self._main_loop_tick,"main_loop_tick")
+        self._main_task = self.taskMgr.add(self._main_loop_tick, "main_loop_tick")
         
         # register global keys if desired
-        if args.developer:
+        if (self._developer_mode == "1") or self._developer_mode:
             self.accept("escape", exit)
             self.accept("f1",self._remote_commands.put,['start'])
             self.accept("f2",self._remote_commands.put,['cancel'])
@@ -185,31 +183,27 @@ class MainApp(ShowBase):
         
                 
         # start the module if desired
-        if (args.autolaunch == True) or (args.autolaunch=='1'):
+        if self._autolaunch:
             self.start_module()
 
         # start the TCP server for remote control
-        self._init_server(args.serverport)
+        self._init_server(self._server_port)
 
-    def _load_configfiles(self):
-        print("Applying the engine configuration file/settings...")
-        # load the selected engine configuration (studypath takes precedence over the SNAP root path)
-        config_searchpath = DSearchPath()
-        config_searchpath.appendDirectory(Filename.fromOsSpecific(self._studypath))
-        config_searchpath.appendDirectory(Filename.fromOsSpecific('.'))
-        loadPrcFile(config_searchpath.findFile(Filename.fromOsSpecific(self._engineconfig)))
-
-        # add a few more media search paths (in particular, media can be in the media directory, or in the studypath)
-        loadPrcFileData('', 'model-path ' + self._studypath + '/media')
-        loadPrcFileData('', 'model-path ' + self._studypath)
-        loadPrcFileData('', 'model-path media')
+    def _load_serverconfig(self):
+        if os.path.exists(self._studypath):
+            print("Applying the engine configuration file/settings...")
+            # load the selected engine configuration (STUDYPATH takes precedence over the SNAP root path)
+            loadPrcFile(self._studypath)
+        else:
+            warnings.warn("Studies .prc file not loaded. Loading defaultsettings.prc ...")
+            loadPrcFile(path_join("studies/defaultsettings.prc"))
 
         # override engine settings according to the command line arguments, if specified
-        loadPrcFileData(f'fullscreen {self._fullscreen}')
-        loadPrcFileData(f'win-size {self._windowsize.replace('x',' ')}')
-        loadPrcFileData('', 'win-origin ' + self._windoworigin.replace('/',' '))
-        loadPrcFileData('', 'undecorated ' + self._noborder)
-        loadPrcFileData('', 'nomousecursor ' + self._nomousecursor)
+        loadPrcFileData('', f'FULLSCREEN {self._fullscreen}')
+        loadPrcFileData('', f"win-size {self._windowsize.replace('x',' ')}")
+        loadPrcFileData('', f"win-origin {self._windoworigin.replace('/',' ')}")
+        loadPrcFileData('', f'undecorated {self._noborder}')
+        loadPrcFileData('', f'NOMOUSECURSOR {self._nomousecursor}')
 
     def set_defaults(self):
         """Sets some environment defaults that might be overridden by the modules."""
@@ -219,18 +213,23 @@ class MainApp(ShowBase):
         # base.win.setClearColor((0.3, 0.3, 0.3, 1))
         # winprops = WindowProperties() 
         # winprops.setTitle('SNAP') 
-        # base.win.requestProperties(winprops) 
+        # base.win.requestProperties(winprops)
         
         
     def load_module(self, runner):
         """Try to load the given module, if any. The module can be in any folder under modules."""
-        module = ""
-        instance = module.Main()
-        instance._make_up_for_lost_time = args.timecompensation
-        print(f"module {runner} loaded sucessfully.")
-        return instance
+        if len(runner) > 0:
+            try:
+                module = pkgutil.get_loader(f'meyendtris.modules.{runner}')
+                instance = module.Main()
+                instance._make_up_for_lost_time = self._compensate_lost_time
+                print(f"module {runner} loaded sucessfully.")
+                return instance
+            except:
+                return ImportError("Model import Error. (Check your modules variable path)")
+        print("Modules variable path needed. CAUTION! you are not running any simulation")
 
-    def load_config(self,name):
+    def load_remoteconfig(self, name):
         """Try to load a study config file (see studies directory)."""
         print('Attempting to load config "'+ name+ '"...')
         warnings.warn("rewrite this")
@@ -239,7 +238,7 @@ class MainApp(ShowBase):
     def start_module(self):        
         if self._instance is not None:
             self.cancel_module()
-            print('Starting module execution...', end=' ')
+            print('Starting module execution...')
             self._instance.start()
             print('done.')
             self._executing = True
@@ -248,7 +247,7 @@ class MainApp(ShowBase):
     # cancel executing the currently loaded module (may be started again later)
     def cancel_module(self):
         if (self._instance is not None) and self._executing:
-            print('Canceling module execution...', end=' ')
+            print('Canceling module execution...')
             self._instance.cancel()
             print('done.')
         self._executing = False
@@ -257,7 +256,7 @@ class MainApp(ShowBase):
     # prune a currently loaded module's resources
     def prune_module(self):
         if (self._instance is not None):
-            print("Pruning current module's resources...", end=' ')
+            print("Pruning current module's resources...")
             try:
                 self._instance.prune()
             except Exception as inst:
@@ -297,7 +296,7 @@ class MainApp(ShowBase):
 
 
     # main loop step, ticked every frame
-    def _main_loop_tick(self,task):
+    def _main_loop_tick(self, task):
         #framework.tickmodule.engine_lock.release()
         meyendtris.framework.base_classes.shared_lock.release()
 
@@ -320,9 +319,9 @@ class MainApp(ShowBase):
                         pass
                 elif cmd.startswith("config "):
                     if not cmd.endswith(".cfg"):
-                        self.load_config(cmd[7:]+".cfg")
+                        self.load_remoteconfig(cmd[7:]+".cfg")
                     else:
-                        self.load_config(cmd[7:])
+                        self.load_remoteconfig(cmd[7:])
         except queue.Empty:
             pass
 
@@ -342,43 +341,39 @@ if __name__ == "__main__":
     print('This is SNAP version ' + SNAP_VERSION + "\n\n")
 
     # --- Parse console arguments ---
-
     print('Reading command-line options...')
     parser = ArgumentParser()
-    parser.add_argument("-n", "--name", "modulename", dest="modulename", default=LOAD_MODULE,
-                    help="Experiment module to load upon startup (see modules). Can also be a .cfg file of a study (see studies and --studypath).")
-    parser.add_argument("-s","--studypath", dest="studypath", default=STUDYPATH,
+    parser.add_argument("-n", "--MODULENAME", dest="MODULENAME", default=LOAD_MODULE,
+                    help="Experiment module to load upon startup (see modules). Can also be a .cfg file of a study (see studies and --STUDYPATH).")
+    parser.add_argument("-s","--STUDYPATH", dest="STUDYPATH", default=STUDY_PATH,
                     help="The directory in which to look for .cfg files, media, .prc files etc. for a particular study.")
-    parser.add_argument("-a", "--autolaunch", dest="autolaunch", default=AUTO_LAUNCH, 
+    parser.add_argument("-a", "--AUTOLAUNCH", dest="AUTOLAUNCH", default=AUTO_LAUNCH, 
                     help="Whether to automatically launch the selected module.")
-    parser.add_argument("-d","--developer", dest="developer", default=DEVELOPER_MODE,
-                    help="Whether to launch in developer mode; if true, allows to load,start, and cancel experiment modules via keyboard shortcuts.")
-    parser.add_argument("-e","--engineconfig", dest="engineconfig", default=ENGINE_CONFIG,
-                    help="A configuration file for the Panda3d engine (allows to change many engine-level settings, such as the renderer; note that the format is dictated by Panda3d).")
-    parser.add_argument("-f","--fullscreen", dest="fullscreen", default=FULLSCREEN,
-                    help="Whether to go fullscreen (default: according to current engine config).")
-    parser.add_argument("-w","--windowsize", dest="windowsize", default=WINDOWSIZE,
-                    help="Window size, formatted as in --windowsize 1024x768 to select the main window size in pixels (default: accoding to current engine config).")
-    parser.add_argument("-o","--windoworigin", dest="windoworigin", default=WINDOWORIGIN,
-                    help="Window origin, formatted as in --windoworigin 50/50 to select the main window origin, i.e. left upper corner in pixes (default: accoding to current engine config).")
-    parser.add_argument("-b","--noborder", dest="noborder", default=NOBORDER,
+    parser.add_argument("-d","--DEVELOPER", dest="DEVELOPER", default=DEVELOPER_MODE,
+                    help="Whether to launch in DEVELOPER mode; if true, allows to load,start, and cancel experiment modules via keyboard shortcuts.")
+    parser.add_argument("-f","--FULLSCREEN", dest="FULLSCREEN", default=FULL_SCREEN,
+                    help="Whether to go FULLSCREEN (default: according to current engine config).")
+    parser.add_argument("-w","--WINDOWSIZE", dest="WINDOWSIZE", default=WINDOW_SIZE,
+                    help="Window size, formatted as in --WINDOWSIZE 1024x768 to select the main window size in pixels (default: accoding to current engine config).")
+    parser.add_argument("-o","--WINDOWORIGIN", dest="WINDOWORIGIN", default=WINDOW_ORIGIN,
+                    help="Window origin, formatted as in --WINDOWORIGIN 50/50 to select the main window origin, i.e. left upper corner in pixes (default: accoding to current engine config).")
+    parser.add_argument("-b","--NOBORDER", dest="NOBORDER", default=NO_BORDER,
                     help="Disable window borders (default: accoding to current engine config).")
-    parser.add_argument("-c","--nomousecursor", dest="nomousecursor", default=NOMOUSECURSOR,
+    parser.add_argument("-c","--NOMOUSECURSOR", dest="NOMOUSECURSOR", default=NO_MOUSECURSOR,
                     help="Disable mouse cursor (default: accoding to current engine config).")
-    parser.add_argument("-r","--datariver", dest="datariver", default=DATA_RIVER,
+    parser.add_argument("-r","--DATARIVER", dest="DATARIVER", default=DATA_RIVER,
                     help="Whether to enable DataRiver support in the launcher.")
-    parser.add_argument("-l","--labstreaming", dest="labstreaming", default=LAB_STREAMING,
+    parser.add_argument("-l","--LABSTREAMING", dest="LABSTREAMING", default=LAB_STREAMING,
                     help="Whether to enable lab streaming layer (LSL) support in the launcher.")
-    parser.add_argument("-p","--serverport", dest="serverport", default=SERVER_PORT,
+    parser.add_argument("-p","--SERVERPORT", dest="SERVERPORT", default=SERVER_PORT,
                     help="The port on which the launcher listens for remote control commands (e.g. loading a module).")
-    parser.add_argument("-t","--timecompensation", dest="timecompensation", default=COMPENSATE_LOST_TIME,
+    parser.add_argument("-t","--TIMECONSUMPENSATE", dest="TIMECONSUMPENSATE", default=COMPENSATE_LOST_TIME,
                     help="Compensate time lost to processing or jitter by making the successive sleep() call shorter by a corresponding amount of time (good for real time, can be a hindrance during debugging).")
     args = parser.parse_args()
 
     # ----------------------
     # --- SNAP Main Loop ---
     # ----------------------
-
     app = MainApp()
 
     # Needed after the call to MainApp

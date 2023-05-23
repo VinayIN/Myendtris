@@ -43,9 +43,12 @@ from random import random
 from time import time
 
 
-class StressCalibration(LatentModule):
+class Main(LatentModule):
     def __init__(self):
         super().__init__(make_up_for_lost_time = False)
+        self._base = ShowBase()
+        self._win = DrawableRegion()
+        self._audio = AudioManager()
 
         self.backgroundColour = (0, 0, 0, 1)        # background colour    
         
@@ -98,14 +101,11 @@ class StressCalibration(LatentModule):
         
 
     def run(self):
-        base = ShowBase()
-        win = DrawableRegion()
-        audio = AudioManager()
         # accepting keyboard input
         self.accept("escape", self.exit)
     
         # setting black background colour
-        win.setClearColor(self.backgroundColour)
+        self._win.setClearColor(self.backgroundColour)
         
         # setting text colour
         tp = TextProperties()
@@ -114,8 +114,8 @@ class StressCalibration(LatentModule):
         tpMgr.setProperties("text", tp)
                 
         # initialising beep audio
-        beep = audio.loadSfx(self.beepSound)
-        audio.setVolume(self.beepVolume)
+        beep = self._audio.loadSfx(self.beepSound)
+        self._audio.setVolume(self.beepVolume)
         beep.setLoop(False)
         
         self.waitForUser()
@@ -149,8 +149,8 @@ class StressCalibration(LatentModule):
                     while time() < startTime + 1:
                     
                         red, green, blue, alpha, height = random(), random(), random(), random(), random()
-                        width = self.map(random(), [0, 1], [-base.getAspectRatio(), base.getAspectRatio()])
-                        x     = self.map(random(), [0, 1], [-base.getAspectRatio(), base.getAspectRatio()])
+                        width = self.map(random(), [0, 1], [-self._base.getAspectRatio(), self._base.getAspectRatio()])
+                        x     = self.map(random(), [0, 1], [-self._base.getAspectRatio(), self._base.getAspectRatio()])
                         y     = self.map(random(), [0, 1], [-1, 1])
                         
                         square = OnscreenImage(image=path_join('/media/blank.tga'),
@@ -179,5 +179,3 @@ class StressCalibration(LatentModule):
     def exit(self):
         print("Exiting...")
         exit()
-
-app = StressCalibration()
