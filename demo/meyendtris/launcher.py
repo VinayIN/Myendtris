@@ -42,6 +42,7 @@ from argparse import ArgumentParser
 import threading
 import queue
 import socketserver
+import importlib
 
 
 from direct.showbase.ShowBase import ShowBase
@@ -116,40 +117,55 @@ COMPENSATE_LOST_TIME = True
 class MainApp(ShowBase):    
     """The Main SNAP application."""
     
-    def __init__(self, args):
+    def __init__(
+            self,
+            fullscreen=False,
+            windowsize="1024x720",
+            windoworigin="50/50",
+            noborder=True,
+            nomousecursor=False,
+            data_river=False,
+            lab_streaming=True,
+            server_port=7897,
+            developer_mode=True,
+            compensate_lost_time=True, **kwargs):
+        """Needs a modulename to load and execute, pass it in global variable LOAD_MODULE or as cmdline args, --modulename
+        """
         super().__init__()
 
-        self._instance = None            # instance of the module's Main class
-        self._executing = False          # whether we are executing the module
-        self._remote_commands = queue.Queue() # a message queue filled by the TCP server
-        self._args = args                # the configuration options
+        # load the parameters from kwargs, if passed any
+        self._module = kwargs["modulename"] if kwargs["modulename"] else LOAD_MODULE
+        self._labstreaming = kwargs["labstreaming"] if kwargs["labstreaming"] else lab_streaming
+        self._datariver = kwargs["datariver"] if kwargs["datariver"] else data_river
+        self._windowsize = kwargs["windowsize"] if kwargs["windowsize"] else windowsize
+        self._windoworigin = kwargs["windoworigin"] if kwargs["windoworigin"] else windoworigin
+        self._fullscreen = kwargs["fullscreen"] if kwargs["fullscreen"] else fullscreen
+        self._noborder = kwargs["noborder"] if kwargs["noborder"] else noborder
+        self._nomousecursor = kwargs["nomousecursor"] if kwargs["nomousecursor"] else nomousecursor
+        self._server_port = kwargs["server_port"] if kwargs["server_port"] else server_port
+        self._developer_mode = kwargs["developer_mode"] if kwargs["developer_mode"] else developer_mode
+        self._compensate_lost_time = kwargs["compensate_lost_time"] if kwargs["compensate_lost_time"] else compensate_lost_time
+        self._studypath = 
 
-        init_markers(args.labstreaming,False,args.datariver)
 
 
-        print("Applying the engine configuration file/settings...")
-        # load the selected engine configuration (studypath takes precedence over the SNAP root path)
-        config_searchpath = DSearchPath()
-        config_searchpath.appendDirectory(Filename.fromOsSpecific(args.studypath))
-        config_searchpath.appendDirectory(Filename.fromOsSpecific('.'))
-        loadPrcFile(config_searchpath.findFile(Filename.fromOsSpecific(args.engineconfig)))
+        # whether we are executing the module
+        self._executing = False
+        # a message queue filled by the TCP server
+        self._remote_commands = queue.Queue()
 
-        # add a few more media search paths (in particular, media can be in the media directory, or in the studypath)
-        loadPrcFileData('', 'model-path ' + args.studypath + '/media')
-        loadPrcFileData('', 'model-path ' + args.studypath)
-        loadPrcFileData('', 'model-path media')
+        # instance of the module's Main class
+        # load the initial module or config if desired
+        try:
+            self._instance = self.load_module(self._module)
+        except Exception as err:
+            print(f"The experiment module '{self._module}' could not be imported correctly. (error:{err})")
+            warnings.warn("module instantiation error")
+            traceback.print_exc()
 
-        # override engine settings according to the command line arguments, if specified
-        if args.fullscreen is not None:
-            loadPrcFileData('', 'fullscreen ' + args.fullscreen)
-        if args.windowsize is not None:
-            loadPrcFileData('', 'win-size ' + args.windowsize.replace('x',' '))
-        if args.windoworigin is not None:
-            loadPrcFileData('', 'win-origin ' + args.windoworigin.replace('/',' '))
-        if args.noborder is not None:
-            loadPrcFileData('', 'undecorated ' + args.noborder)
-        if args.nomousecursor is not None:
-            loadPrcFileData('', 'nomousecursor ' + args.nomousecursor)
+        init_markers(self._labstreaming, False, self._datariver)
+
+        self._load_configfiles()
             
         # send an initial start marker
         send_marker(999)
@@ -166,16 +182,7 @@ class MainApp(ShowBase):
             self.accept("f1",self._remote_commands.put,['start'])
             self.accept("f2",self._remote_commands.put,['cancel'])
             self.accept("f5",self._remote_commands.put,['prune'])
-                
-        # load the initial module or config if desired
-        if args.runner is not None:
-            import importlib
-            try:
-                self.load_module(args.runner)
-            except Exception as err:
-                print(f"The experiment module '{args.runner}' could not be imported correctly.")
-                warnings.warn("module instantiation error")
-                traceback.print_exc()
+        
                 
         # start the module if desired
         if (args.autolaunch == True) or (args.autolaunch=='1'):
@@ -184,7 +191,26 @@ class MainApp(ShowBase):
         # start the TCP server for remote control
         self._init_server(args.serverport)
 
-        
+    def _load_configfiles(self):
+        print("Applying the engine configuration file/settings...")
+        # load the selected engine configuration (studypath takes precedence over the SNAP root path)
+        config_searchpath = DSearchPath()
+        config_searchpath.appendDirectory(Filename.fromOsSpecific(self._studypath))
+        config_searchpath.appendDirectory(Filename.fromOsSpecific('.'))
+        loadPrcFile(config_searchpath.findFile(Filename.fromOsSpecific(self._engineconfig)))
+
+        # add a few more media search paths (in particular, media can be in the media directory, or in the studypath)
+        loadPrcFileData('', 'model-path ' + self._studypath + '/media')
+        loadPrcFileData('', 'model-path ' + self._studypath)
+        loadPrcFileData('', 'model-path media')
+
+        # override engine settings according to the command line arguments, if specified
+        loadPrcFileData(f'fullscreen {self._fullscreen}')
+        loadPrcFileData(f'win-size {self._windowsize.replace('x',' ')}')
+        loadPrcFileData('', 'win-origin ' + self._windoworigin.replace('/',' '))
+        loadPrcFileData('', 'undecorated ' + self._noborder)
+        loadPrcFileData('', 'nomousecursor ' + self._nomousecursor)
+
     def set_defaults(self):
         """Sets some environment defaults that might be overridden by the modules."""
         font = self.loader.loadFont(path_join('media/arial.ttf'), textureMargin=5)
@@ -199,9 +225,10 @@ class MainApp(ShowBase):
     def load_module(self, runner):
         """Try to load the given module, if any. The module can be in any folder under modules."""
         module = ""
-        self._instance = module.Main()
-        self._instance._make_up_for_lost_time = self._args.timecompensation
+        instance = module.Main()
+        instance._make_up_for_lost_time = args.timecompensation
         print(f"module {runner} loaded sucessfully.")
+        return instance
 
     def load_config(self,name):
         """Try to load a study config file (see studies directory)."""
@@ -318,7 +345,7 @@ if __name__ == "__main__":
 
     print('Reading command-line options...')
     parser = ArgumentParser()
-    parser.add_argument("-i", "--input", dest="runner", default=LOAD_MODULE,
+    parser.add_argument("-n", "--name", "modulename", dest="modulename", default=LOAD_MODULE,
                     help="Experiment module to load upon startup (see modules). Can also be a .cfg file of a study (see studies and --studypath).")
     parser.add_argument("-s","--studypath", dest="studypath", default=STUDYPATH,
                     help="The directory in which to look for .cfg files, media, .prc files etc. for a particular study.")
@@ -352,7 +379,7 @@ if __name__ == "__main__":
     # --- SNAP Main Loop ---
     # ----------------------
 
-    app = MainApp(args)
+    app = MainApp()
 
     # Needed after the call to MainApp
     while True:
