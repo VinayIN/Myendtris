@@ -1,15 +1,21 @@
-from meyendtris import path_join
+from abc import ABC, abstractmethod
+import meyendtris
 from direct.gui.OnscreenText import OnscreenText
 from direct.gui.OnscreenImage import OnscreenImage
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.Audio3DManager import Audio3DManager
 import panda3d.core as pandac
 import meyendtris.framework.eventmarkers.eventmarkers
+from meyendtris.framework.latentmodule import LatentModule
 import math, warnings, os
     
-class BasicStimuli(ShowBase):
+class BasicStimuli(LatentModule, ABC):
     """
-    A class that provides convenience functions for displaying psychological-type stimuli.
+    Derive from this class to implement your own module with stimuli, by overriding 
+    the run() function. The only parts in your code that should consume significant amounts 
+    of time are the calls to explicit time-consumption functions (see below), such as sleep().
+
+    This class provides convenience functions for displaying psychological-type stimuli.
     This includes text, rectangles, crosshairs, images, sounds, and video.
     These functions are automatically available to any LatentModule. 
     """
@@ -23,10 +29,10 @@ class BasicStimuli(ShowBase):
                 o.destroy()
 
     def __init__(self):
-        super().__init__()
-        self.audio3d = None             # 3d audio manager, if needed
-        self.implicit_markers = False   # whether to generate implicit markers
-                                        # in write(), movie(), etc.
+        self._base = meyendtris.__BASE__
+        super().__init__(make_up_for_lost_time = False)
+        self.audio3d = None
+        self.implicit_markers = False
         self._to_destroy = []
 
     def marker(self,markercode):
@@ -50,12 +56,12 @@ class BasicStimuli(ShowBase):
               fg=None,                  # the (r,g,b,a) color of the text; usually each is a floats between 0 and 1
               bg=None,                  # the (r,g,b,a) color of the text background; if a is zero, no background will be created
               shadow=None,              # the (r,g,b,a) color of the text's shadow
-              shadowOffset=(0.04,0.04), # offset of the drop shadow from the text
+              shadow_offset=(0.04,0.04), # offset of the drop shadow from the text
               frame=None,               # the (r,g,b,a) color of the text's frame, drawn around the background (if desired)
               align='center',           # either 'left', 'center', or 'right'
               wordwrap=None,            # optionally the width to wordwrap the text at
-              drawOrder=None,           # optional drawing order
-              font=path_join('media/arial.ttf'), # optionally the font of the text (see loader.loadFont)
+              draw_order=None,           # optional drawing order
+              font=meyendtris.path_join('media/arial.ttf'), # optionally the font of the text (see loader.loadFont)
               parent=None,              # parent rendering context or Panda3d NodePath
               sort=0                    # sorting order of the text
               ):
@@ -71,8 +77,8 @@ class BasicStimuli(ShowBase):
             block = False
         
 
-        font = self.loader.loadFont(font)
-        obj = OnscreenText(text=text,pos=(pos[0],pos[1]-scale/4),roll=roll,scale=scale,fg=fg,bg=bg,shadow=shadow,shadowOffset=shadowOffset,frame=frame,align=align,wordwrap=wordwrap,drawOrder=drawOrder,font=font,parent=parent,sort=sort)
+        font = self._base.loader.loadFont(font)
+        obj = OnscreenText(text=text,pos=(pos[0],pos[1]-scale/4),roll=roll,scale=scale,fg=fg,bg=bg,shadow=shadow,shadowOffset=shadow_offset,frame=frame,align=align,wordwrap=wordwrap,drawOrder=draw_order,font=font,parent=parent,sort=sort)
         self._to_destroy.append(obj)
         if self.implicit_markers:
             self.marker(254)
@@ -88,7 +94,7 @@ class BasicStimuli(ShowBase):
             self._destroy_object(obj,255)
         else:
             if duration > 0:
-                self.taskMgr.doMethodLater(duration, self._destroy_object, 'ConvenienceFunctions, remove_text',extraArgs=[obj,255])
+                self._base.taskMgr.doMethodLater(duration, self._destroy_object, 'ConvenienceFunctions, remove_text', extraArgs=[obj, 255])
             return obj
 
     def crosshair(self,
@@ -105,10 +111,11 @@ class BasicStimuli(ShowBase):
                   parent=None       # the renderer to use for displaying the object
                   ):        
         """Draw a crosshair."""
-        obj1 = OnscreenImage(image='blank.tga',pos=(pos[0],0,pos[1]),scale=(size,1,width),color=color,parent=parent)
+        img = meyendtris.path_join('media/blank.tga')
+        obj1 = OnscreenImage(image=img,pos=(pos[0],0,pos[1]),scale=(size,1,width),color=color,parent=parent)
         self._to_destroy.append(obj1)
         obj1.setTransparency(pandac.TransparencyAttrib.MAlpha)
-        obj2 = OnscreenImage(image='blank.tga',pos=(pos[0],0,pos[1]),scale=(width,1,size),color=color,parent=parent)
+        obj2 = OnscreenImage(image=img,pos=(pos[0],0,pos[1]),scale=(width,1,size),color=color,parent=parent)
         self._to_destroy.append(obj2)
         obj2.setTransparency(pandac.TransparencyAttrib.MAlpha)
         if self.implicit_markers:
@@ -124,11 +131,11 @@ class BasicStimuli(ShowBase):
             self._destroy_object([obj1,obj2],253)
         else:
             if duration > 0:
-                self.taskMgr.doMethodLater(duration, self._destroy_object, 'ConvenienceFunctions, remove_crosshair',extraArgs=[[obj1,obj2],253])
+                self._base.taskMgr.doMethodLater(duration, self._destroy_object, 'ConvenienceFunctions, remove_crosshair',extraArgs=[[obj1,obj2],253])
             return self.destroy_helper([obj1,obj2])
   
     def rectangle(self,
-                  rect=None,        # the bounds of the rectangle (left,right,top,bottom)
+                  rect=(0,0,0,0),        # the bounds of the rectangle (left,right,top,bottom)
                   duration=1.0,     # duration for which this object will be displayed
                                     # if this is a string, the stimulus will be displayed until the corresponding event is generated
                                     # if this is a list of [number,string], the stimulus will at least be displayed for <number> seconds, but needs to confirmed with the respective event
@@ -145,7 +152,7 @@ class BasicStimuli(ShowBase):
             block = False
         
         l=rect[0];r=rect[1];t=rect[2];b=rect[3]
-        obj = OnscreenImage(image='blank.tga',pos=((l+r)/2,depth,(b+t)/2),scale=((r-l)/2,1,(b-t)/2),color=color,parent=parent)
+        obj = OnscreenImage(image= meyendtris.path_join('media/blank.tga'),pos=((l+r)/2,depth,(b+t)/2),scale=((r-l)/2,1,(b-t)/2),color=color,parent=parent)
         self._to_destroy.append(obj)
         obj.setTransparency(pandac.TransparencyAttrib.MAlpha)
         if self.implicit_markers:
@@ -161,11 +168,11 @@ class BasicStimuli(ShowBase):
             self._destroy_object(obj,251)
         else:
             if duration > 0:                            
-                self.taskMgr.doMethodLater(duration, self._destroy_object, 'ConvenienceFunctions, remove_rect',extraArgs=[obj,251])
+                self._base.taskMgr.doMethodLater(duration, self._destroy_object, 'ConvenienceFunctions, remove_rect',extraArgs=[obj,251])
             return obj
 
     def frame(self,
-              rect=None,            # the inner bounds of the frame (left,right,top,bottom)
+              rect=(0,0,0,0),            # the inner bounds of the frame (left,right,top,bottom)
               thickness=(0.01,0.01),# thickness of the frame (left/right, top/bottom)
               duration=1.0,         # duration for which this object will be displayed
                                     # if this is a string, the stimulus will be displayed until the corresponding event is generated
@@ -180,16 +187,17 @@ class BasicStimuli(ShowBase):
                 
         l=rect[0];r=rect[1];t=rect[2];b=rect[3]
         w=thickness[0];h=thickness[1]
-        L = OnscreenImage(image='blank.tga',pos=(l-w/2,0,(b+t)/2),scale=(w/2,1,w+(b-t)/2),color=color,parent=parent)
+        img = meyendtris.path_join('media/blank.tga')
+        L = OnscreenImage(image=img,pos=(l-w/2,0,(b+t)/2),scale=(w/2,1,w+(b-t)/2),color=color,parent=parent)
         L.setTransparency(pandac.TransparencyAttrib.MAlpha)
         self._to_destroy.append(L)
-        R = OnscreenImage(image='blank.tga',pos=(r+w/2,0,(b+t)/2),scale=(w/2,1,w+(b-t)/2),color=color,parent=parent)
+        R = OnscreenImage(image=img,pos=(r+w/2,0,(b+t)/2),scale=(w/2,1,w+(b-t)/2),color=color,parent=parent)
         R.setTransparency(pandac.TransparencyAttrib.MAlpha)
         self._to_destroy.append(R)
-        T = OnscreenImage(image='blank.tga',pos=((l+r)/2,0,t-h/2),scale=(h+(r-l)/2,1,h/2),color=color,parent=parent)
+        T = OnscreenImage(image=img,pos=((l+r)/2,0,t-h/2),scale=(h+(r-l)/2,1,h/2),color=color,parent=parent)
         T.setTransparency(pandac.TransparencyAttrib.MAlpha)
         self._to_destroy.append(T)
-        B = OnscreenImage(image='blank.tga',pos=((l+r)/2,0,b+h/2),scale=(h+(r-l)/2,1,h/2),color=color,parent=parent)
+        B = OnscreenImage(image=img,pos=((l+r)/2,0,b+h/2),scale=(h+(r-l)/2,1,h/2),color=color,parent=parent)
         B.setTransparency(pandac.TransparencyAttrib.MAlpha)
         self._to_destroy.append(B)
         if self.implicit_markers:
@@ -205,7 +213,7 @@ class BasicStimuli(ShowBase):
             self._destroy_object([L,R,T,B],243)
         else:
             if duration > 0:
-                self.taskMgr.doMethodLater(duration,self._destroy_object, 'ConvenienceFunctions, remove_frame',extraArgs=[[L,R,T,B],243])    
+                self._base.taskMgr.doMethodLater(duration,self._destroy_object, 'ConvenienceFunctions, remove_frame',extraArgs=[[L,R,T,B],243])    
             return self.destroy_helper([L,R,T,B])        
 
     def picture(self, 
@@ -249,7 +257,7 @@ class BasicStimuli(ShowBase):
             self._destroy_object(obj,249)
         else:
             if duration > 0:
-                self.taskMgr.doMethodLater(duration, self._destroy_object, 'ConvenienceFunctions, remove_picture', extraArgs=[obj,249])
+                self._base.taskMgr.doMethodLater(duration, self._destroy_object, 'ConvenienceFunctions, remove_picture', extraArgs=[obj,249])
             return obj
 
     def sound(self,
@@ -267,12 +275,12 @@ class BasicStimuli(ShowBase):
         """Play a sound in a particular location."""
         if surround:            
             if self.audio3d is None:
-                self.audio3d = Audio3DManager(self.sfxManagerList[0],None)
+                self.audio3d = Audio3DManager(self._base.sfxManagerList[0], None)
             obj = self.audio3d.loadSfx(filename)
             self._to_destroy.append(obj)
             self.audio3d.setSoundVelocityAuto(obj)
         else:
-            obj = self.loader.loadSfx(filename)
+            obj = self._base.loader.loadSfx(filename)
             self._to_destroy.append(obj)
             obj.setVolume(volume)
             obj.setBalance(direction)
@@ -295,7 +303,7 @@ class BasicStimuli(ShowBase):
             self.sleep(length)
             self._destroy_object(obj,247)            
         else:
-            self.taskMgr.doMethodLater(length, self._destroy_object, 'ConvenienceFunctions, end_sound', extraArgs=[None,247])
+            self._base.taskMgr.doMethodLater(length, self._destroy_object, 'ConvenienceFunctions, end_sound', extraArgs=[None,247])
             return obj
 
     def movie(self,
@@ -328,7 +336,7 @@ class BasicStimuli(ShowBase):
 
         # load the sound track if there is one
         try:
-            snd = self.loader.loadSfx(filename)
+            snd = self._base.loader.loadSfx(filename)
             if snd.length() == 0.0:
                 snd = None
         except:
@@ -340,7 +348,7 @@ class BasicStimuli(ShowBase):
             snd.setBalance(direction)
 
         # create the video texture and set basic properties
-        tex = self.loader.loadTexture(filename)
+        tex = self._base.loader.loadTexture(filename)
         self._to_destroy.append(tex)
         tex.setBorderColor((bordercolor[0],bordercolor[1],bordercolor[2],bordercolor[3]))
         tex.setWrapU(pandac.Texture.WMBorderColor)
@@ -411,38 +419,37 @@ class BasicStimuli(ShowBase):
             self.sleep(length)
             self._destroy_object(img, 245)
         else:
-            self.taskMgr.doMethodLater(length, self._destroy_object, 'ConvenienceFunctions, remove_movie', extraArgs=[[img,tex,snd],245])
+            self._base.taskMgr.doMethodLater(length, self._destroy_object, 'ConvenienceFunctions, remove_movie', extraArgs=[[img,tex,snd],245])
             return playable
-
 
     def precache_sound(self,filename):
         """Pre-cache a sound file."""
         if filename is None:
             return
-        return self.loader.loadSfx(filename)
+        return self._base.loader.loadSfx(filename)
     
     def precache_picture(self,filename):
         """Pre-cache a picture file."""
         if filename is None:
             return
-        return self.loader.loadTexture(filename)
+        return self._base.loader.loadTexture(filename)
 
     def precache_model(self,filename):
         """Pre-cache a model file."""
         if filename is None:
             return
-        return self.loader.loadModel(filename)
+        return self._base.loader.loadModel(filename)
     
     def precache_movie(self,filename):
         """Pre-cache a movie file."""
         if filename is None:
             return
         try:
-            self.loader.loadTexture(filename)
+            self._base.loader.loadTexture(filename)
         except:
             pass
         try:
-            return self.loader.loadSfx(filename)
+            return self._base.loader.loadSfx(filename)
         except:
             pass
     
@@ -451,31 +458,31 @@ class BasicStimuli(ShowBase):
         if filename is None:
             return
         # get the handle
-        h = self.loader.loadSfx(filename)
+        h = self._base.loader.loadSfx(filename)
         # remove it
-        self.loader.unloadSfx(h)
+        self._base.loader.unloadSfx(h)
 
     def uncache_picture(self,filename):
         """Un-cache a previously cached picture file."""
         if filename is None:
             return
         # get the handle
-        h = self.loader.loadTexture(filename)
+        h = self._base.loader.loadTexture(filename)
         # remove it
-        self._engine.base.loader.unloadTexture(h)
+        self._base.loader.unloadTexture(h)
 
     def uncache_movie(self,filename):
         """Un-cache a previously cached movie file."""
         if filename is None:
             return
         try:
-            h = self.loader.loadTexture(filename)
-            self.loader.unloadTexture(h)
+            h = self._base.loader.loadTexture(filename)
+            self._base.loader.unloadTexture(h)
         except:
             pass
         try:
-            h = self.loader.loadSfx(filename)
-            self.loader.unloadSfx(h)
+            h = self._base.loader.loadSfx(filename)
+            self._base.loader.unloadSfx(h)
         except:
             pass
 
@@ -490,7 +497,7 @@ class BasicStimuli(ShowBase):
         """
         self.marker('Experiment Control/Setup/Parameters/%s:"%s"%s' % (self.__class__, str(self.__dict__).replace('"','\\"'), extra_msg))
 
-    def _destroy_object(self,obj,id=-1):
+    def _destroy_object(self, obj, id=-1):
         """Internal helper to automatically destroy a stimulus object."""
         obj = list(obj) if isinstance(obj, tuple) else obj
         obj = [obj] if not isinstance(obj, list) else obj
@@ -511,3 +518,18 @@ class BasicStimuli(ShowBase):
                     self._to_destroy.remove(ele)
         except:
             warnings.warn("Error in destryoing objects")
+
+    # ======================
+    # === Core Interface ===
+    # ======================
+
+    @abstractmethod
+    def run(self):
+        """
+        Override this function with your code.
+        * Expect to receive a ModuleCancelled exception during any call to a time-consumption function (like sleep());
+          this happens when the experimenter decides to cancel your current run.
+        * Consider using try/finally in your run() function to clean up any on-screen (or audio) resources when the
+          module is cancelled. This is especially true in the advanced use case of implementing parallel sub-tasks that
+          are intended to be cancelled at some point by the main task.
+        """

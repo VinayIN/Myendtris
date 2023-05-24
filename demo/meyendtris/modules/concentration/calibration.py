@@ -31,16 +31,15 @@ import math
 import sys
 import colorsys
 
-from meyendtris.framework.latentmodule import LatentModule
+from meyendtris.framework.basicstimuli import BasicStimuli
 from direct.showbase.ShowBase import ShowBase
 
 
-class Main(LatentModule):
+class Main(BasicStimuli):
     def __init__(self):
         super().__init__()
     
     def move_blocks(self):
-
         self.write("hello", duration=10)
 
     def run(self):

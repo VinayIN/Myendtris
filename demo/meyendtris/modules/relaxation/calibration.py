@@ -34,22 +34,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from meyendtris import path_join
-from meyendtris.framework.latentmodule import LatentModule
-from panda3d.core import TextProperties, TextPropertiesManager, DrawableRegion, AudioManager
-from direct.showbase.ShowBase import ShowBase
+import meyendtris
+from meyendtris.framework.basicstimuli import BasicStimuli
+from panda3d.core import TextProperties, TextPropertiesManager
 from direct.gui.OnscreenImage import OnscreenImage
 from random import random
 from time import time
 
-
-class Main(LatentModule):
+class Main(BasicStimuli):
     def __init__(self):
-        super().__init__(make_up_for_lost_time = False)
-        self._base = ShowBase()
-        self._win = DrawableRegion()
-        self._audio = AudioManager()
-
+        super().__init__()
+        self._base = meyendtris.__BASE__
         self.backgroundColour = (0, 0, 0, 1)        # background colour    
         
         self.fps = 60                               # update frequency, in Hz
@@ -57,7 +52,7 @@ class Main(LatentModule):
         self.trials = 20                            # total number of trials (e.g. 2 = one of each)
         self.trialLength = 10                       # length per trial in seconds (only integers)
         
-        self.beepSound = path_join("/media/ding.wav") # audio file for beep
+        self.beepSound = meyendtris.path_join("/media/ding.wav") # audio file for beep
         self.beepVolume = 1.0                       # beep volume, 0-1
         
         self.crossColour = (0.2, 0.2, 0.2, 1)       # crosshair colour
@@ -71,9 +66,7 @@ class Main(LatentModule):
 
     def waitForUser(self):
         # waiting for user to be ready
-        self.write(
-                text = "\1text\1" + self.textPressSpace,
-                duration = 'space')
+        self.write(text = "\1text\1" + self.textPressSpace, duration = 'space')
         
 
     def map(self, sourcevalue, sourcerange, targetrange):
@@ -105,7 +98,7 @@ class Main(LatentModule):
         self.accept("escape", self.exit)
     
         # setting black background colour
-        self._win.setClearColor(self.backgroundColour)
+        # self._win.setClearColor(self.backgroundColour)
         
         # setting text colour
         tp = TextProperties()
@@ -114,8 +107,8 @@ class Main(LatentModule):
         tpMgr.setProperties("text", tp)
                 
         # initialising beep audio
-        beep = self._audio.loadSfx(self.beepSound)
-        self._audio.setVolume(self.beepVolume)
+        beep = self._base.loader.loadSfx(self.beepSound)
+        beep.setVolume(self.beepVolume)
         beep.setLoop(False)
         
         self.waitForUser()
@@ -153,11 +146,10 @@ class Main(LatentModule):
                         x     = self.map(random(), [0, 1], [-self._base.getAspectRatio(), self._base.getAspectRatio()])
                         y     = self.map(random(), [0, 1], [-1, 1])
                         
-                        square = OnscreenImage(image=path_join('/media/blank.tga'),
+                        square = OnscreenImage(image=meyendtris.path_join('/media/blank.tga'),
                                 color = (red, green, blue, alpha),
                                 pos = (x, 0, y),
                                 scale = (width, 0, height))
-                        square.reparentTo(self.render)
                         square.setTransparency(1)
                         noise.append(square)
                         
@@ -170,12 +162,10 @@ class Main(LatentModule):
                 for square in noise:
                     square.destroy()
                     
-        self.write(
-                text = "\1text\1" + self.textEndExperiment,
-                duration = 'space')
+        self.write(text = "\1text\1" + self.textEndExperiment, duration = 'space')
         self.exit()
-        
-        
+
+
     def exit(self):
         print("Exiting...")
         exit()

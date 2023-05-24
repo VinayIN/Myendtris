@@ -11,14 +11,8 @@ import warnings
 
 class LatentModule(
     meyendtris.framework.base_classes.TickModule,
-    meyendtris.framework.base_classes.TimeConsumingModule,
-    meyendtris.framework.basicstimuli.BasicStimuli,
-    ABC):
+    meyendtris.framework.base_classes.TimeConsumingModule):
     """
-    Derive from this class to implement your own module with latent code, by overriding 
-    the run() function. The only parts in your code that should consume significant amounts 
-    of time are the calls to explicit time-consumption functions (see below), such as sleep().
-    
     Note that any of these functions may throw a ModuleCancelled exception, in which case your function
     needs to clean all resources from the screen, audio buffers (and event handlers) and exit as soon
     as possible (ideally instantly). The most convenient way to accomplish this is using the try/finally
@@ -71,22 +65,6 @@ class LatentModule(
         self._messages = []             # queue of messages to be sent off at the next tick
         self._to_destroy = []           # list of objects to .destroy() upon cancel
 
-
-    # ======================
-    # === Core Interface ===
-    # ======================
-
-    def run(self):
-        """
-        Override this function with your code.
-        * Expect to receive a ModuleCancelled exception during any call to a time-consumption function (like sleep());
-          this happens when the experimenter decides to cancel your current run.
-        * Consider using try/finally in your run() function to clean up any on-screen (or audio) resources when the
-          module is cancelled. This is especially true in the advanced use case of implementing parallel sub-tasks that
-          are intended to be cancelled at some point by the main task.
-        """
-
-
     def launch(self,newtask,inherit_timing_parameters=True):
         """
         Launch a new latent sub-task that will be executed interleaved ("semi-parallel") with the current task.
@@ -105,7 +83,7 @@ class LatentModule(
     # === time-consumption functions that wait for things to happen (Implementation of the TimeConsumingModule interface) ===
     # =======================================================================================================================
 
-    def sleep(self,duration=100000,cur_tick=None):
+    def sleep(self,duration=100000.0,cur_tick=None):
         """
         Sleep for a number of seconds; optionally execute some tick function at every frame.
         Event handlers may fire during this time, and content is rendered every frame.

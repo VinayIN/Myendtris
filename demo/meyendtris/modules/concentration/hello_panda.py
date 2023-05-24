@@ -10,28 +10,29 @@ from direct.actor.Actor import Actor
 from direct.interval.IntervalGlobal import Sequence
 
 from panda3d.core import Point3
+import meyendtris
 
 
 
-class HelloPanda(ShowBase):
+class HelloPanda():
 
     def __init__(self):
 
-        super().__init__()
+        self._base = meyendtris.__BASE__
 
 
         # Disable the camera trackball controls.
 
-        self.disableMouse()
+        self._base.disableMouse()
 
 
         # Load the environment model.
+        self.scene = self._base.loader.loadModel("models/environment")
 
-        self.scene = self.loader.loadModel("models/environment")
 
         # Reparent the model to render.
 
-        self.scene.reparentTo(self.render)
+        self.scene.reparentTo(self._base.render)
 
         # Apply scale and position transforms on the model.
 
@@ -41,8 +42,7 @@ class HelloPanda(ShowBase):
 
 
         # Add the spinCameraTask procedure to the task manager.
-
-        self.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
+        self._base.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
 
 
         # Load and transform the panda actor.
@@ -53,7 +53,7 @@ class HelloPanda(ShowBase):
 
         self.pandaActor.setScale(0.005, 0.005, 0.005)
 
-        self.pandaActor.reparentTo(self.render)
+        self.pandaActor.reparentTo(self._base.render)
 
         # Loop its animation.
 
@@ -108,9 +108,9 @@ class HelloPanda(ShowBase):
 
         angleRadians = angleDegrees * (pi / 180.0)
 
-        self.camera.setPos(20 * sin(angleRadians), -20 * cos(angleRadians), 3)
+        self._base.camera.setPos(20 * sin(angleRadians), -20 * cos(angleRadians), 3)
 
-        self.camera.setHpr(angleDegrees, 0, 0)
+        self._base.camera.setHpr(angleDegrees, 0, 0)
 
         return Task.cont
 
@@ -118,4 +118,4 @@ class HelloPanda(ShowBase):
 
 app = HelloPanda()
 
-app.run()
+app._base.run()

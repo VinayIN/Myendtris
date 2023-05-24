@@ -1,5 +1,9 @@
 import os
 import pathlib
+from direct.showbase.ShowBase import ShowBase
+
+
+__BASE__ = ShowBase()
 __PACKAGE_PATH__ = os.path.dirname(os.path.abspath(__file__))
 __ROOT_PATH__ = os.path.dirname(os.path.abspath(__PACKAGE_PATH__))
 __version__ = "0.2.0"

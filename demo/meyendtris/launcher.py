@@ -37,19 +37,17 @@ The SNAP experiment launcher program. To be run on the subject's PC.
     
 '''
 import sys, os
-import fnmatch, traceback, warnings
+import warnings
 from argparse import ArgumentParser
 import threading
 import queue
 import socketserver
-import pkgutil
+import importlib
 
-
-from direct.showbase.ShowBase import ShowBase
 from direct.task.Task import Task
-from panda3d.core import loadPrcFile, loadPrcFileData, Filename, DSearchPath, VBase4
+from panda3d.core import loadPrcFile, loadPrcFileData
 
-from meyendtris import path_join
+import meyendtris
 from meyendtris.framework.eventmarkers.eventmarkers import send_marker, init_markers
 import meyendtris.framework.base_classes
 
@@ -65,7 +63,7 @@ SNAP_VERSION = '2.0'
 # else is specified.
 # Can also be a .cfg file of a study.
 # provide a .py that Main() ex: "concentration.calibration". Assumes to load it from modules/ folder
-LOAD_MODULE = ""
+LOAD_MODULE = "relaxation.calibration"
 
 # If true, the selected module will be launched automatically; otherwise it will
 # only be (pre-)loaded; the user needs to press F1 (or issue the "start" command remotely) to start the module 
@@ -114,9 +112,11 @@ COMPENSATE_LOST_TIME = True
 # --- Main application definition ---
 # -----------------------------------
 
-class MainApp(ShowBase):
-    """The Main SNAP application."""
-    
+class MainApp:
+    """The Main SNAP application.
+    Pass either commandline arguments or use the global variables or the init varibles.
+    There are 3 ways to control the MainApp.
+    """
     def __init__(
             self,
             modulename=LOAD_MODULE,
@@ -134,8 +134,8 @@ class MainApp(ShowBase):
             autolaunch=AUTO_LAUNCH, **kwargs):
         """Needs a modulename to load and execute, pass it in global variable LOAD_MODULE or as cmdline args, --modulename
         """
-        super().__init__()
         # load the parameters from kwargs, if passed any
+        self._base = meyendtris.__BASE__
         self._module = kwargs.get("MODULENAME") if kwargs.get("MODULENAME") else modulename
         self._labstreaming = kwargs.get("LABSTREAMING") if kwargs.get("LABSTREAMING") else labstreaming
         self._datariver = kwargs.get("DATARIVER") if kwargs.get("DATARIVER") else datariver
@@ -147,39 +147,35 @@ class MainApp(ShowBase):
         self._server_port = kwargs.get("SERVERPORT") if kwargs.get("SERVERPORT") else serverport
         self._developer_mode = kwargs.get("DEVELOPER") if kwargs.get("DEVELOPER") else developer
         self._compensate_lost_time = kwargs.get("TIMECONSUMPENSATE") if kwargs.get("TIMECONSUMPENSATE") else timecompensate
-        self._studypath =  path_join(kwargs.get("STUDYPATH")) if kwargs.get("STUDYPATH") else path_join(f"studies/{studypath}") # type: ignore
+        self._studypath =  meyendtris.path_join(f'studies/{kwargs.get("STUDYPATH")}') if kwargs.get("STUDYPATH") else path_join(f"studies/{studypath}") # type: ignore
         self._autolaunch = kwargs.get("AUTOLAUNCH") if kwargs.get("AUTOLAUNCH") else autolaunch
 
         # whether we are executing the module
         self._executing = False
+
+        # preload some data and init some settings
+        self._set_defaults()
+        self._load_serverconfig()
+
         # a message queue filled by the TCP server
         self._remote_commands = queue.Queue()
-
         # instance of the module's Main class
         # load the initial module or config if desired
-        try:
-            self._instance = self.load_module(self._module)
-        except Exception as err:
-            print(f"The experiment module '{self._module}' could not be imported correctly. (error:{err})")
-            warnings.warn("module instantiation error")
-            traceback.print_exc()
-
-        init_markers(self._labstreaming, False, self._datariver)
-        self._load_serverconfig()          
+        self._instance = self._load_module(self._module)
+        # Initial markers to be send
+        init_markers(self._labstreaming, False, self._datariver)         
         # send an initial start marker
         send_marker(999)
-        # preload some data and init some settings
-        self.set_defaults()
 
         # register the main loop
-        self._main_task = self.taskMgr.add(self._main_loop_tick, "main_loop_tick")
+        self._main_task = self._base.taskMgr.add(self._main_loop_tick, "main_loop_tick")
         
         # register global keys if desired
-        if (self._developer_mode == "1") or self._developer_mode:
-            self.accept("escape", exit)
-            self.accept("f1",self._remote_commands.put,['start'])
-            self.accept("f2",self._remote_commands.put,['cancel'])
-            self.accept("f5",self._remote_commands.put,['prune'])
+        # if (self._developer_mode == "1") or self._developer_mode:
+            # self.accept("escape", exit)
+            # self.accept("f1",self._remote_commands.put,['start'])
+            # self.accept("f2",self._remote_commands.put,['cancel'])
+            # self.accept("f5",self._remote_commands.put,['prune'])
         
                 
         # start the module if desired
@@ -196,40 +192,39 @@ class MainApp(ShowBase):
             loadPrcFile(self._studypath)
         else:
             warnings.warn("Studies .prc file not loaded. Loading defaultsettings.prc ...")
-            loadPrcFile(path_join("studies/defaultsettings.prc"))
+            loadPrcFile(meyendtris.path_join("studies/defaultsettings.prc"))
 
         # override engine settings according to the command line arguments, if specified
         loadPrcFileData('', f'FULLSCREEN {self._fullscreen}')
-        loadPrcFileData('', f"win-size {self._windowsize.replace('x',' ')}")
-        loadPrcFileData('', f"win-origin {self._windoworigin.replace('/',' ')}")
+        loadPrcFileData('', f"win-size {self._windowsize.replace('x',' ')}") # type: ignore
+        loadPrcFileData('', f"win-origin {self._windoworigin.replace('/',' ')}") # type: ignore
         loadPrcFileData('', f'undecorated {self._noborder}')
         loadPrcFileData('', f'NOMOUSECURSOR {self._nomousecursor}')
 
-    def set_defaults(self):
+    def _set_defaults(self):
         """Sets some environment defaults that might be overridden by the modules."""
-        font = self.loader.loadFont(path_join('media/arial.ttf'), textureMargin=5)
+        font = self._base.loader.loadFont(meyendtris.path_join('media/arial.ttf'), textureMargin=5) # type: ignore
         font.setPixelsPerUnit(128)
-        # self.win.setClearColorActive(True)
-        # base.win.setClearColor((0.3, 0.3, 0.3, 1))
+        # self._base.win.setClearColorActive(True)
+        # self._base.win.setClearColor((0.3, 0.3, 0.3, 1))
         # winprops = WindowProperties() 
         # winprops.setTitle('SNAP') 
-        # base.win.requestProperties(winprops)
-        
-        
-    def load_module(self, runner):
+        # self._base.win.requestProperties(winprops)
+           
+    def _load_module(self, runner):
         """Try to load the given module, if any. The module can be in any folder under modules."""
         if len(runner) > 0:
             try:
-                module = pkgutil.get_loader(f'meyendtris.modules.{runner}')
-                instance = module.Main()
+                module = importlib.import_module(f'meyendtris.modules.{runner}')
+                instance = module.Main() # type: ignore
                 instance._make_up_for_lost_time = self._compensate_lost_time
                 print(f"module {runner} loaded sucessfully.")
                 return instance
             except:
-                return ImportError("Model import Error. (Check your modules variable path)")
+                raise ImportError("Model import Error. \nTip! Check your modules variable path")
         print("Modules variable path needed. CAUTION! you are not running any simulation")
 
-    def load_remoteconfig(self, name):
+    def _load_remoteconfig(self, name):
         """Try to load a study config file (see studies directory)."""
         print('Attempting to load config "'+ name+ '"...')
         warnings.warn("rewrite this")
@@ -243,7 +238,6 @@ class MainApp(ShowBase):
             print('done.')
             self._executing = True
 
-
     # cancel executing the currently loaded module (may be started again later)
     def cancel_module(self):
         if (self._instance is not None) and self._executing:
@@ -251,8 +245,7 @@ class MainApp(ShowBase):
             self._instance.cancel()
             print('done.')
         self._executing = False
-
-             
+           
     # prune a currently loaded module's resources
     def prune_module(self):
         if (self._instance is not None):
@@ -311,7 +304,7 @@ class MainApp(ShowBase):
                 elif cmd == "prune":
                     self.prune_module()
                 elif cmd.startswith("load "):
-                    self.load_module(cmd[5:])
+                    self._load_module(cmd[5:])
                 elif cmd.startswith("setup "):
                     try:
                         exec(cmd[6:], self._instance.__dict__)
@@ -319,9 +312,9 @@ class MainApp(ShowBase):
                         pass
                 elif cmd.startswith("config "):
                     if not cmd.endswith(".cfg"):
-                        self.load_remoteconfig(cmd[7:]+".cfg")
+                        self._load_remoteconfig(cmd[7:]+".cfg")
                     else:
-                        self.load_remoteconfig(cmd[7:])
+                        self._load_remoteconfig(cmd[7:])
         except queue.Empty:
             pass
 
@@ -374,13 +367,13 @@ if __name__ == "__main__":
     # ----------------------
     # --- SNAP Main Loop ---
     # ----------------------
-    app = MainApp()
+    app = MainApp(**vars(args))
 
     # Needed after the call to MainApp
     while True:
         meyendtris.framework.base_classes.shared_lock.acquire()
         #framework.tickmodule.engine_lock.acquire()
-        app.taskMgr.step()
+        app._base.taskMgr.step()
         #framework.tickmodule.engine_lock.release()
         meyendtris.framework.base_classes.shared_lock.release()
     # --------------------------------
