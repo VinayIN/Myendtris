@@ -165,7 +165,7 @@ class Main(BasicStimuli):
         self.write(text = "\1text\1" + self.textEndExperiment, duration = 'space')
         self.exit()
 
-
+    
     def exit(self):
         print("Exiting...")
         exit()

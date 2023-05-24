@@ -96,6 +96,7 @@ do
         case $calib_option in
         "1")
         echo    "Running Calibration for ${YELLOW}Stress Classifier${NOCOLOR}"
+        python -m meyendtris.launcher --MODULENAME relaxation.calibration -s meyendtrisdisplaysettings.prc
         ;; # end of case 1 calib_option
         "2")
         echo    "Running Calibration for ${YELLOW}Concentration Classifier${NOCOLOR}"
