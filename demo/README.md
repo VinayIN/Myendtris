@@ -15,20 +15,25 @@ Installation
 Install meyendtris to your system in editable mode. 
 ```bash
 pip install -e .
+
+# check for the installation
+python -c "import meyendtris; print(meyendtris.__version__)"
 ```
 
 
 ## HOW TO RUN ANY `.py`?
-#### 1. If installed as a package
+#### 1. If installed as a package (Recommended)
 It is possible to run any script from any directory.
 
+`Tip:` **Use this command to check for command line arguments `python meyendtris/launcher.py --help`
 Example is shown below:
 ```bash
 # If calibration.py is the file you want to run
-python -m meyendtris.modules.concentration.calibration
+python meyendtris/launcher.py --MODULENAME 'relaxation.calibration'
 or
 python /path_to_the_script.py
 ```
+You can change the varibles either through commandline or inside the file `meyendtris/launcher.py`
 
 
 #### 2. If not installed as a package
