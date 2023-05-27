@@ -1,16 +1,22 @@
 import zmq
 import logging
 from zmq.log.handlers import PUBHandler
+import time
+import sys
+import inspect
 
-logger = logging.getLogger("")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger("meyendtris")
+logging.basicConfig(level=logging.INFO)
 
+def exit_from_python():
+    sys.exit("Exit command entered")
 
 class Server:
-    def __init__(self):
-        self.host = "*"
-        self.port = "18812"
-        self.log = False
+    def __init__(self, host="*", port="18812", logger_port="18813", log=False):
+        self.host = host
+        self.port = port
+        self.logger_port = logger_port
+        self.log = log
         self._rep = None
         # {message_from_client_side: action_to_perform_on_server_side}
         # After the action is performed, return a string that needs to be replied on client side
@@ -18,16 +24,12 @@ class Server:
             "0": "command_mode",
             "start": None,
             "restart": None,
-            "exit": None}
+            "exit": exit_from_python}
 
         self._ctx = zmq.Context()
         if self.log:
             self._pub = self._ctx.socket(zmq.PUB)
-            self._pub.setsockopt(zmq.LINGER, 0)
-            print('tcp://{self.host}:{self.port}')
-            self._pub.bind("tcp://*:5555")
-            handler: PUBHandler = PUBHandler(self._pub)
-            logger.addHandler(handler)
+            self._pub.bind(f'tcp://{self.host}:{self.logger_port}')
     
     def get_connection(self):
         req = self._ctx.socket(zmq.REP)
@@ -45,9 +47,12 @@ class Server:
 
         if message in self.invoke_client_command:
             # Check the message received and perform an operation
-            print(message)
+            logger.info(message)
             print("------")
-            self.send_message(message=self.invoke_client_command.get(message, ""))
+            func = self.invoke_client_command.get(message, "")
+            self.send_message(message=f"Running {func}")
+            if inspect.isfunction(func):
+                func()
             return f"Finished client's request for {message}"
         
         print("-------")
@@ -55,12 +60,19 @@ class Server:
         return message
 
 if __name__ == "__main__":
-    server = Server()
+    server = Server(log=True)
+    if server.log:
+        handler = PUBHandler(server._pub)
+        logger.addHandler(handler)
+        time.sleep(0.1)
+        logger.info("PUBHandler Logger initialised")
     message = server.receive_message(message_client="command_mode")
+    logger.info(message)
     # Establish relationship with client, if any
     try:
         while True:
             message = server.receive_message()
-            print(message)
+            time.sleep(0.1)
+            logger.info(message)
     except KeyboardInterrupt:
         print("exiting")
