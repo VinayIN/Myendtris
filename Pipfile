@@ -9,11 +9,11 @@ rpyc = "==5.3.1"
 pylsl = "*"
 pytest = "*"
 flit = "*"
-meyendtris = {editable = true, path = "./demo"}
 pyzmq = "*"
+meyendtris = {editable = true, path = "./demo"}
 
 [dev-packages]
 ipython = "*"
 
 [requires]
-python_version = "3.8"
+python_version = "3.11"
