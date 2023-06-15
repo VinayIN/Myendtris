@@ -135,7 +135,7 @@ class BasicStimuli(LatentModule, ABC):
             return self.destroy_helper([obj1,obj2])
   
     def rectangle(self,
-                  rect=(0,0,0,0),        # the bounds of the rectangle (left,right,top,bottom)
+                  rect=(0,0,0,0),   # the bounds of the rectangle (left,right,top,bottom)
                   duration=1.0,     # duration for which this object will be displayed
                                     # if this is a string, the stimulus will be displayed until the corresponding event is generated
                                     # if this is a list of [number,string], the stimulus will at least be displayed for <number> seconds, but needs to confirmed with the respective event
@@ -151,8 +151,16 @@ class BasicStimuli(LatentModule, ABC):
         if duration == 0:
             block = False
         
-        l=rect[0];r=rect[1];t=rect[2];b=rect[3]
-        obj = OnscreenImage(image= meyendtris.path_join('media/blank.tga'),pos=((l+r)/2,depth,(b+t)/2),scale=((r-l)/2,1,(b-t)/2),color=color,parent=parent)
+        l=rect[0]
+        r=rect[1]
+        t=rect[2]
+        b=rect[3]
+        obj = OnscreenImage(
+            image= meyendtris.path_join('media/blank.tga'),
+            pos=((l+r)/2,depth,(b+t)/2),
+            scale=((r-l)/2,1,(b-t)/2),
+            color=color,
+            parent=parent)
         self._to_destroy.append(obj)
         obj.setTransparency(pandac.TransparencyAttrib.MAlpha)
         if self.implicit_markers:

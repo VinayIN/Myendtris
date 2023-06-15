@@ -25,22 +25,67 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from random import random
-from time import time
-import math
+import meyendtris
 import sys
-import colorsys
-
+import random
+import numpy as np
 from meyendtris.framework.basicstimuli import BasicStimuli
-from direct.showbase.ShowBase import ShowBase
+from direct.gui.OnscreenImage import OnscreenImage
+from panda3d.core import Point3
 
 
 class Main(BasicStimuli):
     def __init__(self):
         super().__init__()
-    
-    def move_blocks(self):
-        self.write("hello", duration=10)
+        self._base = meyendtris.__BASE__
+
+        self.duration = 45
+
+        self.textPressSpace = "Press space to continue"     # text to display before beginning
+        self.textEndExperiment = "End of experiment"        # text to indicate end of experiment
+
+        self.beepSound = meyendtris.path_join("/media/ding.wav")
+        self.beepVolume = 1.0
+
+        self.image = meyendtris.path_join('/media/blank.tga')
+
+        self.framecolour = (0.92, 0.96, 0.11, 0.7)
+        self.squarecolour = (0.2, 0.6, 1, 0.7)
 
     def run(self):
-        self.move_blocks()
+        # initialising beep audio
+        beep = self._base.loader.loadSfx(self.beepSound)
+        beep.setVolume(self.beepVolume)
+        beep.setLoop(False)
+
+        self.write(text = self.textPressSpace, duration = 'space')
+
+        beep.play()
+        self.sleep(1)
+        self.marker("Distraction")
+        self.frame(
+            rect=(-1,0.5,1,-0.5),
+            duration=self.duration+1,
+            color=self.framecolour,
+            block=False
+        )
+
+        duration_array = np.concatenate((np.ones(6), np.array([self.duration-6]), np.ones(1)), axis=None)
+        for trial, duration in enumerate(duration_array):
+            self.marker(f"Distraction trial {trial}")
+            l = 2*random.random() - 1
+            r = 2*random.random() - 1
+            t = 2*random.random() - 1
+            b = 2*random.random() - 1
+            self.rectangle(
+                rect=(l,r,t,b),
+                duration=duration,
+                color=self.squarecolour)
+        
+        self.marker("Final Response")
+        self.rectangle(
+                rect=(-0.25, 0, 0.25, 0.25),
+                duration=1,
+                color=self.squarecolour)
+        self.write(text = self.textEndExperiment, duration = 'space')
+        sys.exit()
