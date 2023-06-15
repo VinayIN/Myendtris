@@ -38,8 +38,9 @@ class Main(BasicStimuli):
     def __init__(self):
         super().__init__()
         self._base = meyendtris.__BASE__
-
-        self.duration = 45
+        
+        self.trial = 3
+        self.duration = 60
 
         self.textPressSpace = "Press space to continue"     # text to display before beginning
         self.textEndExperiment = "End of experiment"        # text to indicate end of experiment
@@ -59,33 +60,47 @@ class Main(BasicStimuli):
         beep.setLoop(False)
 
         self.write(text = self.textPressSpace, duration = 'space')
+        random_question = [
+            "How much liters of water did you drink today?",
+            "How many birds did you see today? Do you remember the color of the bird?",
+            "When did you wake up today?",
+            "Did you met any of your friends today? What is his/her last name?",
+            "What color shoes are you wearing?"
+        ]
+        block_moving_count = int(np.ceil(self.duration * 0.4))
+        for trial in range(self.trial):
+            self.marker(f"Distraction trial {trial+1}")
+            self.write(text=f"Trial {trial} \n\n {random.choice(random_question)}", duration=7)
+            beep.play()
+            self.sleep(1)
+            self.frame(
+                rect=(-0.5,0.5,0.5,-0.5),
+                duration=self.duration + 1,
+                color=self.framecolour,
+                block=False
+            )
 
-        beep.play()
-        self.sleep(1)
-        self.marker("Distraction")
-        self.frame(
-            rect=(-1,0.5,1,-0.5),
-            duration=self.duration+1,
-            color=self.framecolour,
-            block=False
-        )
-
-        duration_array = np.concatenate((np.ones(6), np.array([self.duration-6]), np.ones(1)), axis=None)
-        for trial, duration in enumerate(duration_array):
-            self.marker(f"Distraction trial {trial}")
-            l = 2*random.random() - 1
-            r = 2*random.random() - 1
-            t = 2*random.random() - 1
-            b = 2*random.random() - 1
+            duration_array = np.concatenate(
+                (
+                np.ones(block_moving_count),
+                np.array([self.duration-(block_moving_count)]),
+                np.ones(1)),
+                axis=None)
+            for idx, duration in enumerate(duration_array):
+                self.marker("Distraction square")
+                l = 2*random.random() - 1
+                r = 2*random.random() - 1
+                t = 2*random.random() - 1
+                b = 2*random.random() - 1
+                self.rectangle(
+                    rect=(l,r,t,b),
+                    duration=duration,
+                    color=self.squarecolour)
+            
+            self.marker("Final Response")
             self.rectangle(
-                rect=(l,r,t,b),
-                duration=duration,
-                color=self.squarecolour)
-        
-        self.marker("Final Response")
-        self.rectangle(
-                rect=(-0.25, 0, 0.25, 0.25),
-                duration=1,
-                color=self.squarecolour)
+                    rect=(-0.25, 0, 0.25, 0.25),
+                    duration=1,
+                    color=self.squarecolour)
         self.write(text = self.textEndExperiment, duration = 'space')
         sys.exit()

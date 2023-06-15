@@ -100,9 +100,11 @@ do
         ;; # end of case 1 calib_option
         "2")
         echo    "Running Calibration for ${YELLOW}Concentration Classifier${NOCOLOR}"
+        python -m meyendtris.launcher --MODULENAME concentration.calibration -s meyendtrisdisplaysettings.prc
         ;; # end of case 2 calib_option
         "3")
         echo    "Running Calibration for ${YELLOW}Error Classifier${NOCOLOR}"
+        python -m meyendtris.launcher --MODULENAME error.calibration -s meyendtrisdisplaysettings.prc
         ;; # end of case 3 calib_option
         esac
     done
