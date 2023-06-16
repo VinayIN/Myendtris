@@ -149,15 +149,13 @@ class Main(BasicStimuli):
             caption = self.write(
                 text=f"{mental_state}: Classifier\n(Press 'n' for next mental state)",
                 pos=(0, -0.8),
-                duration=0,
-                fg=(1,1,1,1))
+                duration=0)
             self.simulate_bar(mental_state)
             caption.destroy()
         self.write(
             text="End of experiment. \nPress 'escape' to exit",
             pos=(0, -0.8),
-            duration=0,
-            fg=(1,1,1,1))
+            duration=0)
         
         
         

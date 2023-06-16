@@ -53,7 +53,7 @@ class BasicStimuli(LatentModule, ABC):
               pos=(0,0),                # x/y position of the text on the screen
               roll=0,                   # roll angle of the text
               scale=0.07,               # size of the text; either a single float (e.g. 0.07) or a 2-tuple of floats for non-uniform scaling
-              fg=None,                  # the (r,g,b,a) color of the text; usually each is a floats between 0 and 1
+              fg=(1,1,1,1),             # the (r,g,b,a) color of the text; usually each is a floats between 0 and 1
               bg=None,                  # the (r,g,b,a) color of the text background; if a is zero, no background will be created
               shadow=None,              # the (r,g,b,a) color of the text's shadow
               shadow_offset=(0.04,0.04), # offset of the drop shadow from the text
@@ -107,7 +107,7 @@ class BasicStimuli(LatentModule, ABC):
                   pos=(0,0),        # position of the crosshair
                   size=0.25,        # size of the crosshair
                   width=0.01,       # thickness of the rectangles
-                  color=(0,0,0,1),  # color of the crosshair
+                  color=(1,1,1,1),  # color of the crosshair
                   parent=None       # the renderer to use for displaying the object
                   ):        
         """Draw a crosshair."""

@@ -43,7 +43,7 @@ class Main(BasicStimuli):
         self.duration = 30
 
         self.textPressSpace = "Press space to continue"     # text to display before beginning
-        self.textEndExperiment = "End of experiment"        # text to indicate end of experiment
+        self.textEndExperiment = "End of experiment \nPress 'escape' to exit"        # text to indicate end of experiment
 
         self.beepSound = meyendtris.path_join("/media/ding.wav")
         self.beepVolume = 1.0
@@ -54,6 +54,7 @@ class Main(BasicStimuli):
         self.squarecolour = (0.2, 0.6, 1, 0.7)
 
     def run(self):
+        self.accept("escape", sys.exit)
         # initialising beep audio
         beep = self._base.loader.loadSfx(self.beepSound)
         beep.setVolume(self.beepVolume)
@@ -103,4 +104,3 @@ class Main(BasicStimuli):
                     duration=1,
                     color=self.squarecolour)
         self.write(text = self.textEndExperiment, duration = 'space')
-        sys.exit()

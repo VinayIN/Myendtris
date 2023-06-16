@@ -61,7 +61,7 @@ class Main(BasicStimuli):
         self.maxSquares = 3                        # maximum number of squares on the screen
 
         self.textPressSpace = "Press space to continue"     # text to display before beginning
-        self.textEndExperiment = "End of experiment"        # text to indicate end of experiment
+        self.textEndExperiment = "End of experiment \nPress 'escape' to exit"        # text to indicate end of experiment
         self.textColour = (0.5, 0.5, 0.5, 1)                # text colour (r, g, b, a)
         
 
@@ -164,4 +164,4 @@ class Main(BasicStimuli):
                 for square in noise:
                     square.destroy()
                     
-        self.write(text = "\1text\1" + self.textEndExperiment, duration = 'space')
+        self.write(text = self.textEndExperiment, duration = 'space')
