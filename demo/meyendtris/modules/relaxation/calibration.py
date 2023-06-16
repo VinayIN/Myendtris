@@ -34,6 +34,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+import sys
 import meyendtris
 from meyendtris.framework.basicstimuli import BasicStimuli
 from panda3d.core import TextProperties, TextPropertiesManager
@@ -49,15 +50,15 @@ class Main(BasicStimuli):
         
         self.fps = 60                               # update frequency, in Hz
 
-        self.trials = 20                            # total number of trials (e.g. 2 = one of each)
-        self.trialLength = 10                       # length per trial in seconds (only integers)
+        self.trials = 10                            # total number of trials (e.g. 2 = one of each)
+        self.trialLength = 15                       # length per trial in seconds (only integers)
         
         self.beepSound = meyendtris.path_join("/media/ding.wav") # audio file for beep
         self.beepVolume = 1.0                       # beep volume, 0-1
         
         self.crossColour = (0.2, 0.2, 0.2, 1)       # crosshair colour
         
-        self.maxSquares = 10                        # maximum number of squares on the screen
+        self.maxSquares = 3                        # maximum number of squares on the screen
 
         self.textPressSpace = "Press space to continue"     # text to display before beginning
         self.textEndExperiment = "End of experiment"        # text to indicate end of experiment
@@ -95,7 +96,7 @@ class Main(BasicStimuli):
 
     def run(self):
         # accepting keyboard input
-        self.accept("escape", self.exit)
+        self.accept("escape", sys.exit)
     
         # setting black background colour
         # self._win.setClearColor(self.backgroundColour)
@@ -141,9 +142,10 @@ class Main(BasicStimuli):
                     startTime = time()
                     while time() < startTime + 1:
                     
-                        red, green, blue, alpha, height = random(), random(), random(), random(), random()
+                        red, green, blue, alpha = random(), random(), random(), random()
+                        height = self.map(random(), [0, 1], [-self._base.getAspectRatio(), self._base.getAspectRatio()])
                         width = self.map(random(), [0, 1], [-self._base.getAspectRatio(), self._base.getAspectRatio()])
-                        x     = self.map(random(), [0, 1], [-self._base.getAspectRatio(), self._base.getAspectRatio()])
+                        x     = self.map(random(), [0, 1], [-1, 1])
                         y     = self.map(random(), [0, 1], [-1, 1])
                         
                         square = OnscreenImage(image=meyendtris.path_join('/media/blank.tga'),
@@ -163,9 +165,3 @@ class Main(BasicStimuli):
                     square.destroy()
                     
         self.write(text = "\1text\1" + self.textEndExperiment, duration = 'space')
-        self.exit()
-
-    
-    def exit(self):
-        print("Exiting...")
-        exit()

@@ -39,8 +39,8 @@ class Main(BasicStimuli):
         super().__init__()
         self._base = meyendtris.__BASE__
         
-        self.trial = 3
-        self.duration = 60
+        self.trial = 5
+        self.duration = 30
 
         self.textPressSpace = "Press space to continue"     # text to display before beginning
         self.textEndExperiment = "End of experiment"        # text to indicate end of experiment
@@ -70,7 +70,7 @@ class Main(BasicStimuli):
         block_moving_count = int(np.ceil(self.duration * 0.4))
         for trial in range(self.trial):
             self.marker(f"Distraction trial {trial+1}")
-            self.write(text=f"Trial {trial} \n\n {random.choice(random_question)}", duration=7)
+            self.write(text=f"Trial {trial} \n\n {random.choice(random_question)}", duration=5)
             beep.play()
             self.sleep(1)
             self.frame(

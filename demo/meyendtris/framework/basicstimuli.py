@@ -193,20 +193,24 @@ class BasicStimuli(LatentModule, ABC):
               ):
         """Display a frame on the screen and keep it there for a particular duration."""
                 
-        l=rect[0];r=rect[1];t=rect[2];b=rect[3]
-        w=thickness[0];h=thickness[1]
+        l=rect[0]
+        r=rect[1]
+        t=rect[2]
+        b=rect[3]
+        w=thickness[0]
+        h=thickness[1]
         img = meyendtris.path_join('media/blank.tga')
-        L = OnscreenImage(image=img,pos=(l-w/2,0,(b+t)/2),scale=(w/2,1,w+(b-t)/2),color=color,parent=parent)
-        L.setTransparency(pandac.TransparencyAttrib.MAlpha)
+        L = OnscreenImage(image=img,pos=(l-w/2,0,(b+t)/2),scale=(w/2,0,w+(b-t)/2),color=color,parent=parent)
+        L.setTransparency(1)
         self._to_destroy.append(L)
-        R = OnscreenImage(image=img,pos=(r+w/2,0,(b+t)/2),scale=(w/2,1,w+(b-t)/2),color=color,parent=parent)
-        R.setTransparency(pandac.TransparencyAttrib.MAlpha)
+        R = OnscreenImage(image=img,pos=(r+w/2,0,(b+t)/2),scale=(w/2,0,w+(b-t)/2),color=color,parent=parent)
+        R.setTransparency(1)
         self._to_destroy.append(R)
-        T = OnscreenImage(image=img,pos=((l+r)/2,0,t-h/2),scale=(h+(r-l)/2,1,h/2),color=color,parent=parent)
-        T.setTransparency(pandac.TransparencyAttrib.MAlpha)
+        T = OnscreenImage(image=img,pos=((l+r)/2,0,t-h/2),scale=(h+(r-l)/2,0,h/2),color=color,parent=parent)
+        T.setTransparency(1)
         self._to_destroy.append(T)
-        B = OnscreenImage(image=img,pos=((l+r)/2,0,b+h/2),scale=(h+(r-l)/2,1,h/2),color=color,parent=parent)
-        B.setTransparency(pandac.TransparencyAttrib.MAlpha)
+        B = OnscreenImage(image=img,pos=((l+r)/2,0,b+h/2),scale=(h+(r-l)/2,0,h/2),color=color,parent=parent)
+        B.setTransparency(1)
         self._to_destroy.append(B)
         if self.implicit_markers:
             self.marker(242)

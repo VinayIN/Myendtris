@@ -141,6 +141,10 @@ class MainApp:
         """
         # load the parameters from kwargs, if passed any
         self._base = meyendtris.__BASE__
+
+        # setting black background colour (black)
+        self._base.win.setClearColor((0, 0, 0, 1))
+
         self._module = kwargs.get("MODULENAME") if kwargs.get("MODULENAME") else modulename
         self._labstreaming = kwargs.get("LABSTREAMING") if kwargs.get("LABSTREAMING") else labstreaming
         self._datariver = kwargs.get("DATARIVER") if kwargs.get("DATARIVER") else datariver
