@@ -26,9 +26,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import random as rdm
 from time import time
-import math
-import sys
-import colorsys
+import math, sys, colorsys, random
+import meyendtris
+# import numpy as np
+from direct.gui.OnscreenImage import OnscreenImage
 
 from meyendtris.framework.basicstimuli import BasicStimuli
 from direct.showbase.ShowBase import ShowBase
@@ -37,75 +38,123 @@ from direct.showbase.ShowBase import ShowBase
 class Main(BasicStimuli):
     def __init__(self):
         super().__init__()
+        self._base = meyendtris.__BASE__
+        
+        self.trial = 10
+        self.duration = 30
+
+        self.textPressSpace = "Press space to continue"     # text to display before beginning
+        self.textEndExperiment = "End of experiment \nPress 'escape' to exit"        # text to indicate end of experiment
+
+        self.beepSound = meyendtris.path_join("/media/ding.wav")
+        self.beepVolume = 1.0
+
+        self.image = meyendtris.path_join('/media/blank.tga')
+
+        self.framecolour = (0.92, 0.96, 0.11, 0.7)
+        self.squarecolour = (0.2, 0.6, 1, 0.7)
     
     def start_calibration(self):
-        # self.write("hello", duration=10)
-        name1 = input("What is your NAME ? ")
+        self.accept("escape", sys.exit)
+        # initialising beep audio
+        beep = self._base.loader.loadSfx(self.beepSound)
+        beep.setVolume(self.beepVolume)
+        beep.setLoop(False)
 
-        print("Best of Luck! ", name1)
+        self.write(text = self.textPressSpace, duration = 'space')
 
-        words1 = ['donkey', 'aeroplane', 'america', 'program',
-                'python', 'language', 'cricket', 'football',
-                'hockey', 'spaceship', 'bus', 'flight']
+        for trial in range(self.trial): #Begin trial series
+            #Progress bar for errors(maxed out at 5 errors)
+            Pg_bar_right = (0.1,1.3,-0.8,-0.9)
+            Pg_bar_left = (-0.1,-1.3,-0.8,-0.9)
+            
+            pg_block_right = [0.1,0.1,-0.8,-0.9]
+            pg_block_left = [-0.1,-0.1,-0.8,-0.9]
+            block_increment = (Pg_bar_right[1] - Pg_bar_right[0])/5
 
-        # rdm.choice() function will choose one random word from the gven list of words
-        word1 = rdm.choice(words1)
+            blocks_rt, blocks_lt = [], []
 
-        print("Please guess the characters: ")
+            self.marker(f"Begin err trial {trial+1}")
+            err_left,err_right = 0,0 #error count
 
-        guesses1 = ''
+            while err_left <5 and err_right <5: #Single trial
+                beep.play()
+                self.sleep(1)
 
-        # we can use any number of turns here
-        turns1 = 10
+                target_right = 1 if random.random()>0.5 else 0 #Ranomized target direction
+                dir_text = "Right" if target_right else "Left"
+                self.write("Move "+dir_text, duration=2)
+                # TODO register keypress here
+                #Left arrow for left movement and Right arrow for right movement
+                self.marker("Arrow Keypress")
+                
+                #progerss bars
+                frame_rt = self.frame(
+                    rect=(Pg_bar_right),
+                    duration=self.duration + 1,
+                    color=self.framecolour,
+                    block=False
+                )
+                frame_lt = self.frame(
+                    rect=(Pg_bar_left),
+                    duration=self.duration + 1,
+                    color=self.framecolour,
+                    block=False
+                )
 
-        while turns1 > 0:
+                error_movement = 1 if random.random()<=0.4 else 0 #Randomized error probablity
 
-            # counting the number of times a user is failed to guess the right character
-            failed1 = 0
-
-            # all the characters from the input word will be taken one at a time.
-            for char in word1:
-
-                # here, we will comparing that input character with the character in guesses1
-                if char in guesses1:
-                    print(char)
-
+                if target_right:
+                    if error_movement: #Target directio right and actual movement left
+                        pg_block_right[1]+=block_increment
+                        err_right += 1
+                        err_bar_rt = self.rectangle(tuple(pg_block_right),
+                                    duration=0,
+                                    block=True,
+                                    color=(0.8,0.92,0.74,0.5),
+                                    parent=None,      # the renderer to use for displaying the object
+                                    depth=0,)
+                        blocks_rt.append(err_bar_rt)
+                        arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_left.png'), scale=(0.3,1,0.3))
+                        arrow.setTransparency(1)
+                        self.marker("Error movement")
+                        self.marker("Error movement right")
+                    else:
+                        arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_right.png'), scale=(0.3,1,0.3))
+                        self.marker("Non-Error movement")
+                        self.marker("Non-Error movement right")
+                        arrow.setTransparency(1)
                 else:
-                    print("_")
+                    if error_movement: #Target direction left and actual movement right
+                        pg_block_left[1]-=block_increment
+                        err_left += 1
+                        err_bar_lt = self.rectangle(tuple(pg_block_left),
+                                    duration=0,
+                                    block=True,
+                                    color=(0.8,0.92,0.74,0.5),
+                                    parent=None,      # the renderer to use for displaying the object
+                                    depth=0,)
+                        blocks_lt.append(err_bar_lt)
+                        arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_right.png'), scale=(0.3,1,0.3))
+                        arrow.setTransparency(1)
+                        self.marker("Error movement")
+                        self.marker("Error movement left")
+                    else:
+                        arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_left.png'), scale=(0.3,1,0.3))
+                        arrow.setTransparency(1)
+                        self.marker("Non-Error movement")
+                        self.marker("Non-Error movement left")
 
-                    # for every failure of the user 1 will be incremented in failed1
-                    failed1 += 1
+                self.sleep(random.randint(2,3)) #Randomized interval to prevent habituation
+                arrow.destroy()
 
-            if failed1 == 0:
-                # user will win the game if failure is 0 and 'User Win' will be given as output
-                print("User Win")
+            self.write(f"trial {trial+1} complete. Press space to begin next trail",duration = 'space')
+            for block in blocks_rt:
+                block.destroy()
+            for block in blocks_lt:
+                block.destroy()
 
-                # this will print the correct word
-                print("The correct word is: ", word1)
-                break
-
-                # if the user has input the wrong alphabet then
-            # it will ask user to enter another alphabet
-            guess1 = input("Guess another character:")
-
-            # every input character will be stored in guesses
-            guesses1 += guess1
-
-            # here, it will check input with the character in word
-            if guess1 not in word1:
-
-                turns1 -= 1
-                self.marker("error"+str(time.time))
-
-                # if the input character doesnot match the word
-                # then "Wrong Guess" will be given as output
-                print("Wrong Guess")
-
-                # this will print the number of turns left for the user
-                print("You have ", + turns1, 'more guesses ')
-
-                if turns1 == 0:
-                    print("User Loose")
+        self.write(text = self.textEndExperiment, duration = 'space')
 
     def run(self):
         self.start_calibration()
