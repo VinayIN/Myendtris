@@ -39,9 +39,9 @@ class Main(BasicStimuli):
         super().__init__()
         self._base = meyendtris.__BASE__
         
-        self.trial = 10
-        self.duration = 10
-        self.last_response = 1.5
+        self.trial = 20
+        self.duration = 30
+        self.last_response = 2.5
 
         self.textPressSpace = "Press space to continue"     # text to display before beginning
         self.textEndExperiment = "End of experiment \nPress 'escape' to exit"        # text to indicate end of experiment
@@ -63,8 +63,8 @@ class Main(BasicStimuli):
 
         self.write(text = self.textPressSpace, duration = 'space')
         random_question = [
-            "How much liters of water did you drink today?",
-            "How many birds did you see today? Do you remember the color of the bird?",
+            "How much liters of water did you drink today, to two decimal points?",
+            "How many birds did you see today? Do you remember the color of each bird?",
             "When did you wake up today?",
             "Did you met any of your friends today? What is his/her last name?",
             "What color shoes are you wearing? Do you prefer sunglasses or Hat?",
@@ -72,8 +72,17 @@ class Main(BasicStimuli):
             "What languages do you speak?",
             "Do you like watching movie or reading book? (Name a title)",
             "How many popes there has been since there the existence of Christianity?",
-            "How many EU countries are there in the east of Germany?",
-            "How many left turns did you take while arriving to this lab?"
+            "How many EU countries are there to the east of Germany?",
+            "How many left turns did you take while arriving to this lab?",
+            "How many car brands can you name?",
+            "How many letters are there in the alphabet if you remove half of all consonants?",
+            "Name the last three professors you saw from your course",
+            "Who was the fourth president of your own country?",
+            "How much did you spend last month on groceries?",
+            "How many courses do you still need to take to graduate?",
+            "How many glasses of water do you drink on average?",
+            "How many minutes per day do you spend on social media?",
+            "Name five animals starting with the letter S."
         ]
         random.shuffle(random_question)
         block_moving_count = int(np.ceil(self.duration * 0.5))
@@ -83,7 +92,7 @@ class Main(BasicStimuli):
             self.marker(f"trial {trial+1}/{self.trial}")
             self.write(text=f"Trial {trial+1}/{self.trial}", duration=5)
             self.marker("question key press")
-            self.write(text = f"{random_question[idx]}", duration = 10)
+            self.write(text = f"{random_question[idx]} \n\n(Press space when you have read the question)", duration = "space")
             beep.play()
             self.sleep(1)
             self.frame(
@@ -104,17 +113,17 @@ class Main(BasicStimuli):
                 r = 2*random.random() - 1
                 t = 2*random.random() - 1
                 b = 2*random.random() - 1
-                if (duration != 1): self.marker("distraction phase")
+                if (duration != 1 and duration != self.last_response):
+                    self.marker("distraction phase")
+                    self.write(text = "Answer the question", duration = 0.5, block=False)
                 else: self.marker("concentration phase")
                 self.rectangle(
                     rect=(l,r,t,b),
                     duration=duration,
+                    block = False if duration == self.last_response else True,
                     color=self.squarecolour)
             self.marker("Final Response")
-            self.waitfor("enter", duration=0.5)
-            self.rectangle(
-                    rect=(-0.25, 0, 0.25, 0.25),
-                    duration=self.last_response,
-                    color=self.squarecolour)
-            self.write(text = "How many blocks were inside the frame in this trial?", duration = 'enter')
+            response = self.waitfor("enter")
+            self.marker(f"response time {response}")
+            self.write(text = "How many blocks were inside the frame in this trial? \n\n(Say it loud and press enter)", duration = 'enter')
         self.write(text = self.textEndExperiment, duration = 'space')
