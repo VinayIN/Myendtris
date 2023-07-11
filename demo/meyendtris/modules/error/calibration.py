@@ -65,6 +65,7 @@ class Main(BasicStimuli):
 
         for trial in range(self.trial): #Begin trial series
             #Progress bar for errors(maxed out at 5 errors)
+            begin = time()
             Pg_bar_right = (0.1,1.3,-0.8,-0.9)
             Pg_bar_left = (-0.1,-1.3,-0.8,-0.9)
             
@@ -82,11 +83,20 @@ class Main(BasicStimuli):
                 self.sleep(1)
 
                 target_right = 1 if random.random()>0.5 else 0 #Ranomized target direction
-                dir_text = "Right" if target_right else "Left"
-                self.write("Move "+dir_text, duration=2)
+                # dir_text = "Right" if target_right else "Left"
+                # self.write("Move "+dir_text, duration="arrow_right" or "arrow_left")
+                if target_right:
+                    self.write("Move Right", duration="arrow_right")
+                else:
+                    self.write("Move Left", duration="arrow_left")
+
+
                 # TODO register keypress here
                 #Left arrow for left movement and Right arrow for right movement
+                # sleep(random.randint(2,3)) #Randomized interval to prevent habituation
+                elapsed_keypress = begin - time()
                 self.marker("Arrow Keypress")
+                self.marker("Keypress "+str(elapsed_keypress))
                 
                 #progerss bars
                 frame_rt = self.frame(
@@ -117,12 +127,14 @@ class Main(BasicStimuli):
                         blocks_rt.append(err_bar_rt)
                         arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_left.png'), scale=(0.3,1,0.3))
                         arrow.setTransparency(1)
+                        elapsed_feedback = begin - time()
                         self.marker("Error movement")
-                        self.marker("Error movement right")
+                        self.marker("Error movement right "+str(elapsed_feedback))
                     else:
                         arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_right.png'), scale=(0.3,1,0.3))
+                        elapsed_feedback = begin - time()
                         self.marker("Non-Error movement")
-                        self.marker("Non-Error movement right")
+                        self.marker("Non-Error movement right "+str(elapsed_feedback))
                         arrow.setTransparency(1)
                 else:
                     if error_movement: #Target direction left and actual movement right
@@ -137,13 +149,15 @@ class Main(BasicStimuli):
                         blocks_lt.append(err_bar_lt)
                         arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_right.png'), scale=(0.3,1,0.3))
                         arrow.setTransparency(1)
+                        elapsed_feedback = begin - time()
                         self.marker("Error movement")
-                        self.marker("Error movement left")
+                        self.marker("Error movement left "+str(elapsed_feedback))
                     else:
                         arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_left.png'), scale=(0.3,1,0.3))
                         arrow.setTransparency(1)
+                        elapsed_feedback = begin - time()
                         self.marker("Non-Error movement")
-                        self.marker("Non-Error movement left")
+                        self.marker("Non-Error movement left "+str(elapsed_feedback))
 
                 self.sleep(random.randint(2,3)) #Randomized interval to prevent habituation
                 arrow.destroy()
