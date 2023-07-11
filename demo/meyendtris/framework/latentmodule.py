@@ -103,7 +103,7 @@ class LatentModule(
             # make sure that run() terminates
             raise self.ModuleCancelled
 
-    def waitfor(self,eventid,duration=100000,cur_tick=None):            
+    def waitfor(self,eventid,duration=100000.0,cur_tick=None):            
         """
         Wait until a specified event occurs or a number of seconds has passed;
         optionally execute some tick function at every frame.

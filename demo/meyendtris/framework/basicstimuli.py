@@ -53,7 +53,7 @@ class BasicStimuli(LatentModule, ABC):
               pos=(0,0),                # x/y position of the text on the screen
               roll=0,                   # roll angle of the text
               scale=0.07,               # size of the text; either a single float (e.g. 0.07) or a 2-tuple of floats for non-uniform scaling
-              fg=None,                  # the (r,g,b,a) color of the text; usually each is a floats between 0 and 1
+              fg=(1,1,1,1),             # the (r,g,b,a) color of the text; usually each is a floats between 0 and 1
               bg=None,                  # the (r,g,b,a) color of the text background; if a is zero, no background will be created
               shadow=None,              # the (r,g,b,a) color of the text's shadow
               shadow_offset=(0.04,0.04), # offset of the drop shadow from the text
@@ -107,7 +107,7 @@ class BasicStimuli(LatentModule, ABC):
                   pos=(0,0),        # position of the crosshair
                   size=0.25,        # size of the crosshair
                   width=0.01,       # thickness of the rectangles
-                  color=(0,0,0,1),  # color of the crosshair
+                  color=(1,1,1,1),  # color of the crosshair
                   parent=None       # the renderer to use for displaying the object
                   ):        
         """Draw a crosshair."""
@@ -135,7 +135,7 @@ class BasicStimuli(LatentModule, ABC):
             return self.destroy_helper([obj1,obj2])
   
     def rectangle(self,
-                  rect=(0,0,0,0),        # the bounds of the rectangle (left,right,top,bottom)
+                  rect=(0,0,0,0),   # the bounds of the rectangle (left,right,top,bottom)
                   duration=1.0,     # duration for which this object will be displayed
                                     # if this is a string, the stimulus will be displayed until the corresponding event is generated
                                     # if this is a list of [number,string], the stimulus will at least be displayed for <number> seconds, but needs to confirmed with the respective event
@@ -151,8 +151,16 @@ class BasicStimuli(LatentModule, ABC):
         if duration == 0:
             block = False
         
-        l=rect[0];r=rect[1];t=rect[2];b=rect[3]
-        obj = OnscreenImage(image= meyendtris.path_join('media/blank.tga'),pos=((l+r)/2,depth,(b+t)/2),scale=((r-l)/2,1,(b-t)/2),color=color,parent=parent)
+        l=rect[0]
+        r=rect[1]
+        t=rect[2]
+        b=rect[3]
+        obj = OnscreenImage(
+            image= meyendtris.path_join('media/blank.tga'),
+            pos=((l+r)/2,depth,(b+t)/2),
+            scale=((r-l)/2,1,(b-t)/2),
+            color=color,
+            parent=parent)
         self._to_destroy.append(obj)
         obj.setTransparency(pandac.TransparencyAttrib.MAlpha)
         if self.implicit_markers:
@@ -185,20 +193,24 @@ class BasicStimuli(LatentModule, ABC):
               ):
         """Display a frame on the screen and keep it there for a particular duration."""
                 
-        l=rect[0];r=rect[1];t=rect[2];b=rect[3]
-        w=thickness[0];h=thickness[1]
+        l=rect[0]
+        r=rect[1]
+        t=rect[2]
+        b=rect[3]
+        w=thickness[0]
+        h=thickness[1]
         img = meyendtris.path_join('media/blank.tga')
-        L = OnscreenImage(image=img,pos=(l-w/2,0,(b+t)/2),scale=(w/2,1,w+(b-t)/2),color=color,parent=parent)
-        L.setTransparency(pandac.TransparencyAttrib.MAlpha)
+        L = OnscreenImage(image=img,pos=(l-w/2,0,(b+t)/2),scale=(w/2,0,w+(b-t)/2),color=color,parent=parent)
+        L.setTransparency(1)
         self._to_destroy.append(L)
-        R = OnscreenImage(image=img,pos=(r+w/2,0,(b+t)/2),scale=(w/2,1,w+(b-t)/2),color=color,parent=parent)
-        R.setTransparency(pandac.TransparencyAttrib.MAlpha)
+        R = OnscreenImage(image=img,pos=(r+w/2,0,(b+t)/2),scale=(w/2,0,w+(b-t)/2),color=color,parent=parent)
+        R.setTransparency(1)
         self._to_destroy.append(R)
-        T = OnscreenImage(image=img,pos=((l+r)/2,0,t-h/2),scale=(h+(r-l)/2,1,h/2),color=color,parent=parent)
-        T.setTransparency(pandac.TransparencyAttrib.MAlpha)
+        T = OnscreenImage(image=img,pos=((l+r)/2,0,t-h/2),scale=(h+(r-l)/2,0,h/2),color=color,parent=parent)
+        T.setTransparency(1)
         self._to_destroy.append(T)
-        B = OnscreenImage(image=img,pos=((l+r)/2,0,b+h/2),scale=(h+(r-l)/2,1,h/2),color=color,parent=parent)
-        B.setTransparency(pandac.TransparencyAttrib.MAlpha)
+        B = OnscreenImage(image=img,pos=((l+r)/2,0,b+h/2),scale=(h+(r-l)/2,0,h/2),color=color,parent=parent)
+        B.setTransparency(1)
         self._to_destroy.append(B)
         if self.implicit_markers:
             self.marker(242)

@@ -62,7 +62,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'   
 BLUE='\033[0;34m'
 NOCOLOR='\033[0m'
-VERSION="v0.1.2"
+VERSION="v1.0.0"
 
 echo    "Launcher version: ${GREEN}${VERSION}${NOCOLOR}"
 
@@ -100,9 +100,11 @@ do
         ;; # end of case 1 calib_option
         "2")
         echo    "Running Calibration for ${YELLOW}Concentration Classifier${NOCOLOR}"
+        python -m meyendtris.launcher --MODULENAME concentration.calibration -s meyendtrisdisplaysettings.prc
         ;; # end of case 2 calib_option
         "3")
         echo    "Running Calibration for ${YELLOW}Error Classifier${NOCOLOR}"
+        python -m meyendtris.launcher --MODULENAME error.calibration -s meyendtrisdisplaysettings.prc
         ;; # end of case 3 calib_option
         esac
     done
@@ -110,6 +112,7 @@ do
     "2")
     drawline
     echo    "Running ${YELLOW}Classifier Test${NOCOLOR}"
+    python -m meyendtris.launcher --MODULENAME classification -s meyendtrisdisplaysettings.prc
     ;; # end of case 2 main_option
     "3")
     drawline
