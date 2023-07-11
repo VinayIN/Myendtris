@@ -39,7 +39,7 @@ class Main(BasicStimuli):
         super().__init__()
         self._base = meyendtris.__BASE__
         
-        self.trial = 5
+        self.trial = 10
         self.duration = 30
 
         self.textPressSpace = "Press space to continue"     # text to display before beginning
@@ -66,12 +66,17 @@ class Main(BasicStimuli):
             "How many birds did you see today? Do you remember the color of the bird?",
             "When did you wake up today?",
             "Did you met any of your friends today? What is his/her last name?",
-            "What color shoes are you wearing?"
+            "What color shoes are you wearing? Do you prefer sunglasses or Hat?",
+            "Starting today, How many days are left till weekend?",
+            "What languages do you speak?",
+            "Do you like watching movie or reading book? (Name a title)"
         ]
-        block_moving_count = int(np.ceil(self.duration * 0.4))
+        block_moving_count = int(np.ceil(self.duration * 0.5))
         for trial in range(self.trial):
             self.marker(f"Distraction trial {trial+1}")
-            self.write(text=f"Trial {trial} \n\n {random.choice(random_question)}", duration=5)
+            self.write(text=f"Trial {trial}/{self.trial}", duration=5)
+            self.marker("question key press")
+            self.write(text = f"{random.choice(random_question)}", duration = 10)
             beep.play()
             self.sleep(1)
             self.frame(
@@ -88,11 +93,12 @@ class Main(BasicStimuli):
                 np.ones(1)),
                 axis=None)
             for idx, duration in enumerate(duration_array):
-                self.marker("Distraction square")
                 l = 2*random.random() - 1
                 r = 2*random.random() - 1
                 t = 2*random.random() - 1
                 b = 2*random.random() - 1
+                if (duration != 1): self.marker("distraction phase")
+                else: self.marker("concentration phase idx")
                 self.rectangle(
                     rect=(l,r,t,b),
                     duration=duration,
