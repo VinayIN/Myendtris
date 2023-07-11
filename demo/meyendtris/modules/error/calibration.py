@@ -79,40 +79,42 @@ class Main(BasicStimuli):
             err_left,err_right = 0,0 #error count
 
             while err_left <5 and err_right <5: #Single trial
-                beep.play()
+                
                 self.sleep(1)
 
                 target_right = 1 if random.random()>0.5 else 0 #Ranomized target direction
                 # dir_text = "Right" if target_right else "Left"
                 # self.write("Move "+dir_text, duration="arrow_right" or "arrow_left")
                 if target_right:
+                    self.marker("Move Right")
                     self.write("Move Right", duration="arrow_right")
                 else:
+                    self.marker("Move Left")
                     self.write("Move Left", duration="arrow_left")
 
 
-                # TODO register keypress here
                 #Left arrow for left movement and Right arrow for right movement
-                # sleep(random.randint(2,3)) #Randomized interval to prevent habituation
-                elapsed_keypress = begin - time()
+                elapsed_keypress = time() - begin
                 self.marker("Arrow Keypress")
                 self.marker("Keypress "+str(elapsed_keypress))
+                
+                self.sleep(1) #Randomized interval to prevent habituation
                 
                 #progerss bars
                 frame_rt = self.frame(
                     rect=(Pg_bar_right),
-                    duration=self.duration + 1,
+                    duration=0,
                     color=self.framecolour,
                     block=False
                 )
                 frame_lt = self.frame(
                     rect=(Pg_bar_left),
-                    duration=self.duration + 1,
+                    duration=0,
                     color=self.framecolour,
                     block=False
                 )
 
-                error_movement = 1 if random.random()<=0.4 else 0 #Randomized error probablity
+                error_movement = 1 if random.random()<=0.25 else 0 #Randomized error probablity
 
                 if target_right:
                     if error_movement: #Target directio right and actual movement left
@@ -127,12 +129,12 @@ class Main(BasicStimuli):
                         blocks_rt.append(err_bar_rt)
                         arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_left.png'), scale=(0.3,1,0.3))
                         arrow.setTransparency(1)
-                        elapsed_feedback = begin - time()
+                        elapsed_feedback = time() - begin
                         self.marker("Error movement")
                         self.marker("Error movement right "+str(elapsed_feedback))
                     else:
                         arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_right.png'), scale=(0.3,1,0.3))
-                        elapsed_feedback = begin - time()
+                        elapsed_feedback = time() - begin
                         self.marker("Non-Error movement")
                         self.marker("Non-Error movement right "+str(elapsed_feedback))
                         arrow.setTransparency(1)
@@ -149,13 +151,13 @@ class Main(BasicStimuli):
                         blocks_lt.append(err_bar_lt)
                         arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_right.png'), scale=(0.3,1,0.3))
                         arrow.setTransparency(1)
-                        elapsed_feedback = begin - time()
+                        elapsed_feedback = time() - begin
                         self.marker("Error movement")
                         self.marker("Error movement left "+str(elapsed_feedback))
                     else:
                         arrow = OnscreenImage(image=meyendtris.path_join('/media/arrow_left.png'), scale=(0.3,1,0.3))
                         arrow.setTransparency(1)
-                        elapsed_feedback = begin - time()
+                        elapsed_feedback = time() - begin
                         self.marker("Non-Error movement")
                         self.marker("Non-Error movement left "+str(elapsed_feedback))
 
