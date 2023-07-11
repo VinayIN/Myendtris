@@ -40,7 +40,8 @@ class Main(BasicStimuli):
         self._base = meyendtris.__BASE__
         
         self.trial = 10
-        self.duration = 30
+        self.duration = 10
+        self.last_response = 1.5
 
         self.textPressSpace = "Press space to continue"     # text to display before beginning
         self.textEndExperiment = "End of experiment \nPress 'escape' to exit"        # text to indicate end of experiment
@@ -69,19 +70,25 @@ class Main(BasicStimuli):
             "What color shoes are you wearing? Do you prefer sunglasses or Hat?",
             "Starting today, How many days are left till weekend?",
             "What languages do you speak?",
-            "Do you like watching movie or reading book? (Name a title)"
+            "Do you like watching movie or reading book? (Name a title)",
+            "How many popes there has been since there the existence of Christianity?",
+            "How many EU countries are there in the east of Germany?",
+            "How many left turns did you take while arriving to this lab?"
         ]
+        random.shuffle(random_question)
         block_moving_count = int(np.ceil(self.duration * 0.5))
-        for trial in range(self.trial):
-            self.marker(f"Distraction trial {trial+1}")
-            self.write(text=f"Trial {trial}/{self.trial}", duration=5)
+        for idx, trial in enumerate(range(self.trial)):
+            if len(random_question) < self.trial:
+                raise ValueError("Questions are less, Add some more to the list.")
+            self.marker(f"trial {trial+1}/{self.trial}")
+            self.write(text=f"Trial {trial+1}/{self.trial}", duration=5)
             self.marker("question key press")
-            self.write(text = f"{random.choice(random_question)}", duration = 10)
+            self.write(text = f"{random_question[idx]}", duration = 10)
             beep.play()
             self.sleep(1)
             self.frame(
                 rect=(-0.5,0.5,0.5,-0.5),
-                duration=self.duration + 1,
+                duration=self.duration + self.last_response,
                 color=self.framecolour,
                 block=False
             )
@@ -90,7 +97,7 @@ class Main(BasicStimuli):
                 (
                 np.ones(block_moving_count),
                 np.array([self.duration-(block_moving_count)]),
-                np.ones(1)),
+                np.array(self.last_response)),
                 axis=None)
             for idx, duration in enumerate(duration_array):
                 l = 2*random.random() - 1
@@ -98,15 +105,16 @@ class Main(BasicStimuli):
                 t = 2*random.random() - 1
                 b = 2*random.random() - 1
                 if (duration != 1): self.marker("distraction phase")
-                else: self.marker("concentration phase idx")
+                else: self.marker("concentration phase")
                 self.rectangle(
                     rect=(l,r,t,b),
                     duration=duration,
                     color=self.squarecolour)
-            
             self.marker("Final Response")
+            self.waitfor("enter", duration=0.5)
             self.rectangle(
                     rect=(-0.25, 0, 0.25, 0.25),
-                    duration=1,
+                    duration=self.last_response,
                     color=self.squarecolour)
+            self.write(text = "How many blocks were inside the frame in this trial?", duration = 'enter')
         self.write(text = self.textEndExperiment, duration = 'space')
