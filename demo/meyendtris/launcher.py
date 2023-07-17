@@ -51,6 +51,9 @@ import meyendtris
 from meyendtris.framework.eventmarkers.eventmarkers import send_marker, init_markers
 import meyendtris.framework.base_classes
 
+import zmq
+import logging
+from zmq.log.handlers import PUBHandler
 
 SNAP_VERSION = '2.0'
 
