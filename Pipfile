@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+panda3d = "==1.10.13"
+rpyc = "==5.3.1"
+pylsl = "*"
+pytest = "*"
+flit = "*"
+pyzmq = "*"
+meyendtris = {editable = true, path = "./demo"}
+
+[dev-packages]
+ipython = "*"
+
+[requires]
+python_version = "3.11"
