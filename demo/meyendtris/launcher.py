@@ -51,9 +51,14 @@ import meyendtris
 from meyendtris.framework.eventmarkers.eventmarkers import send_marker, init_markers
 import meyendtris.framework.base_classes
 
+import zmq
+import logging
+from zmq.log.handlers import PUBHandler
+from meyendtris.server import Server
 
 SNAP_VERSION = '2.0'
-
+logger = logging.getLogger("meyendtris")
+logging.basicConfig(level=logging.DEBUG)
 
 # -----------------------------------------------------------------------------------------
 # --- Default Launcher Configuration (selectively overridden by command-line arguments) ---
@@ -136,6 +141,10 @@ class MainApp:
         """
         # load the parameters from kwargs, if passed any
         self._base = meyendtris.__BASE__
+
+        # setting black background colour (black)
+        self._base.win.setClearColor((0, 0, 0, 1))
+
         self._module = kwargs.get("MODULENAME") if kwargs.get("MODULENAME") else modulename
         self._labstreaming = kwargs.get("LABSTREAMING") if kwargs.get("LABSTREAMING") else labstreaming
         self._datariver = kwargs.get("DATARIVER") if kwargs.get("DATARIVER") else datariver
@@ -331,7 +340,7 @@ class MainApp:
 # --- Startup Initialization ---
 # ------------------------------
 if __name__ == "__main__":
-    print('This is SNAP version ' + SNAP_VERSION + "\n\n")
+    logger.info(f'This is SNAP version {SNAP_VERSION}')
 
     # --- Parse console arguments ---
     print('Reading command-line options...')
@@ -367,6 +376,7 @@ if __name__ == "__main__":
     # ----------------------
     # --- SNAP Main Loop ---
     # ----------------------
+    server = Server(log=True)
     app = MainApp(**vars(args))
 
     # Needed after the call to MainApp
