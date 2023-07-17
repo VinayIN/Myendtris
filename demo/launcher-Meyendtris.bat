@@ -14,16 +14,24 @@ goto:eof
 
 :: MENU ENTRIES
 
-:menu_1   Calibration (Alpha)
-ppython launcher.py -m Alpha-02-001-calibration -e studies/calibrationdisplaysettings.prc
+:menu_1   Calibration (Relaxation)
+python -m meyendtris.launcher --MODULENAME relaxation.calibration -s meyendtrisdisplaysettings.prc
 goto:eof
 
-:menu_2   Classifier Test (Bar)
-ppython launcher.py -m Alpha-01-001-bar -e studies/calibrationdisplaysettings.prc
+:menu_2   Classifier Test (Concentration)
+python -m meyendtris.launcher --MODULENAME concentration.calibration -s meyendtrisdisplaysettings.prc
+goto:eof
+
+:menu_1   Calibration (Error)
+python -m meyendtris.launcher --MODULENAME error.calibration -s meyendtrisdisplaysettings.prc
+goto:eof
+
+:menu_2   Classifier Test
+python -m meyendtris.launcher --MODULENAME classification -s meyendtrisdisplaysettings.prc
 goto:eof
 
 :menu_3   Meyendtris
-ppython launcher.py -m Meyendtris -e studies/meyendtrisdisplaysettings.prc
+
 goto:eof
 
 :menu_
@@ -100,14 +108,16 @@ goto:eof
  
 :logo
 echo.
-echo   _______                     _____  _           _____
-echo  ^|__   __^|                   ^|  __ \^| ^|         ^|  __ \ /\   :)
-echo     ^| ^| ___  __ _ _ __ ___   ^| ^|__) ^| ^|__  _   _^| ^|__) /  \
-echo     ^| ^|/ _ \/ _` ^| '_ ` _ \  ^|  ___/^| '_ \^| ^| ^| ^|  ___/ /\ \
-echo     ^| ^|  __^| (_^| ^| ^| ^| ^| ^| ^| ^| ^|    ^| ^| ^| ^| ^|_^| ^| ^|  / ____ \
-echo     ^|_^|\___^|\__,_^|_^| ^|_^| ^|_^| ^|_^|    ^|_^| ^|_^|\__, ^|_^| /_/    \_\
-echo                                             __/ '
-echo   Physiological Parameters for Adaptation  :___/  teamphypa.org
+echo  _____                     ______ _          ______  ___  
+echo |_   _|                    | ___ \ |         | ___ \/ _ \ 
+echo   | | ___  __ _ _ __ ___   | |_/ / |__  _   _| |_/ / /_\ \
+echo   | |/ _ \/ _` | '_ ` _ \  |  __/| '_ \| | | |  __/|  _  |
+echo   | |  __/ (_| | | | | | | | |   | | | | |_| | |   | | | |
+echo   \_/\___|\__,_|_| |_| |_| \_|   |_| |_|\__, \_|   \_| |_/
+echo                                          __/ |            
+echo                                         |___/             
+echo           
+echo  Physiological Parameters for Adaptation  :___/  teamphypa.org
 echo.
 echo.
 goto:eof
